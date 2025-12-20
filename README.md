@@ -21,7 +21,7 @@ Extension trình duyệt để lưu và quản lý links với categories, màu 
 
 ### Tải từ Release (Khuyến nghị)
 
-1. Vào [Releases page](https://github.com/your-username/Extension-Save-Link/releases)
+1. Vào [Releases page](https://github.com/CDinhh/Extension-Save-Link/releases)
 2. Tải file ZIP từ release mới nhất
 3. Giải nén file ZIP vào thư mục bất kỳ
 
