@@ -21,14 +21,17 @@ html, body {
 }
 
 .header {
-    background: white;
-    color: #333;
+    /* background: white;
+    /* color: #333; */
     padding: 15px 20px;
+    margin: 15px 15px 0px;
+
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    border-bottom: 2px solid #e0e0e0;
-    flex-shrink: 0;
+    border: 2px solid #1329a1ff;
+    border-radius: 10px;
+    flex-shrink: 0; */
 }
 
 .header h1 {
