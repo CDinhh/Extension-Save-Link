@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Link</title>
+    <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Saved Links</h1>
+
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search links...">
+            <button id="addCategoryBtn" class="btn-add-category">+ Add Category</button>
+        </div>
+
+        <div id="linksList" class="links-list"></div>
+
+        <div class="footer">
+            <span>Link Manager Extension</span>
+            <div class="footer-actions">
+                <button id="exportBtn" class="btn-footer" title="Export All Data (JSON file)">Export Data</button>
+                <button id="importBtn" class="btn-footer" title="Import Data (JSON file)">Import Data</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
