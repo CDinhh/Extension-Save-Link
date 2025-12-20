@@ -211,15 +211,24 @@ function renderLinks(searchTerm = '') {
         const categoryData = linksData[category];
         const links = categoryData.links || [];
 
+        const searchLower = searchTerm.toLowerCase();
+
+        // Check if category matches search term
+        const categoryMatches = searchTerm
+            ? category.toLowerCase().includes(searchLower) ||
+            (categoryData.description && categoryData.description.toLowerCase().includes(searchLower))
+            : false;
+
         // Filter links by search term
         const filteredLinks = searchTerm
             ? links.filter(link =>
-                link.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                link.description.toLowerCase().includes(searchTerm.toLowerCase())
+                link.url.toLowerCase().includes(searchLower) ||
+                (link.description && link.description.toLowerCase().includes(searchLower))
             )
             : links;
 
-        if (searchTerm && filteredLinks.length === 0) return;
+        // Skip category if neither category nor links match search
+        if (searchTerm && !categoryMatches && filteredLinks.length === 0) return;
 
         // Create category element
         const categoryDiv = document.createElement('div');
