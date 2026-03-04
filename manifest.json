@@ -7,7 +7,13 @@
         "storage",
         "tabs",
         "contextMenus",
-        "notifications"
+        "notifications",
+        "identity"
+    ],
+    "host_permissions": [
+        "https://www.googleapis.com/*",
+        "https://firestore.googleapis.com/*",
+        "https://www.gstatic.com/*"
     ],
     "background": {
         "service_worker": "background.js"
@@ -24,5 +30,6 @@
         "16": "icons/icon16.png",
         "48": "icons/icon48.png",
         "128": "icons/icon128.png"
-    }
+    },
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApAh8sRZC69b5gepf14azYbZ4NqYkPJFvduF+sy1SISHhA4dtuzISXI10diU5txXVuNlRChCnAoQXyJoZunizqUVl9NRVMJTrWZa0hhW8VmR2wx8eD27tOklzxc4UBC1r/p14RKOURUNYkg4hqZgSI+3LHNqKAsSEt7vcDhn6h0Nl2rDtBtEPLABajzRHGQSGWSVXV9qCySag7pkLkBs0nT2rk4SKjZpv9818RQzQ27p64lBD1YuubfFtcFCvGI1h85qNmA+jANg7jimV+WcALS75PP5RtIWEE24LgQRwUzd6bWByM4tXFAZPB2bwbGZEoU7gr4g2dLtdz93H+ve9uQIDAQAB"
 }

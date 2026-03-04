@@ -3,3 +3,11 @@ out/
 .vscode-test/
 *.vsix
 .DS_Store
+
+# Optional: Gitignore firebase-config.js if you want to keep credentials private
+# Note: When deploying to store, you MUST include firebase-config.js with real credentials
+# For development, you can keep firebase-config.js in .gitignore and use firebase-config.example.js
+# firebase-config.js
+
+# Private key for extension
+key.pem

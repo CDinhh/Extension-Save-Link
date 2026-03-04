@@ -11,11 +11,48 @@ Extension trình duyệt để lưu và quản lý links với categories, màu 
 - ✅ **Checkbox Done** - Đánh dấu links đã xem/hoàn thành
 - 🔍 **Tìm kiếm** - Tìm links nhanh chóng theo URL hoặc mô tả
 - 🖱️ **Context Menu** - Chuột phải để lưu trang hiện tại vào category
+- ☁️ **Cloud Sync** - Đồng bộ data giữa nhiều máy/trình duyệt qua Google Cloud ⭐ **MỚI!**
+- 🔐 **Google Sign-In** - Đăng nhập Google để sync data tự động
 - 📤 **Export/Import** - Backup và restore dữ liệu dạng JSON
 - 🌐 **Mở nhanh** - Click vào URL để mở trong tab mới
 - 📋 **Copy URL** - Copy đường dẫn nhanh chóng
 - 💾 **Auto Save** - Dữ liệu được lưu tự động trong trình duyệt
 - 🎯 **Collapsed/Expanded** - Tự động ghi nhớ trạng thái mở/đóng categories
+
+## 🔄 Cloud Sync - Đồng bộ giữa nhiều thiết bị
+
+Extension hỗ trợ **đồng bộ data qua Google Cloud Firestore**!
+
+### Tại sao cần Cloud Sync?
+
+- ✅ Sync giữa **mọi trình duyệt**: Chrome, Edge, Brave, Cốc Cốc...
+- ✅ Sync giữa **nhiều máy tính**: laptop, PC, máy công ty...
+- ✅ **Tự động backup** data lên cloud, không lo mất dữ liệu
+- ✅ **Real-time sync** - cập nhật ngay lập tức
+
+### Cách sử dụng Cloud Sync
+
+1. Nhấn nút **"Sign In"** trên header extension
+2. Đăng nhập bằng tài khoản Google
+3. Data sẽ tự động sync lên cloud!
+4. Cài extension trên máy khác, đăng nhập cùng tài khoản → data tự động đồng bộ
+
+### Cài đặt Firebase (cho Developer)
+
+**Nếu bạn là end-user và cài extension từ Chrome Web Store:**
+- Không cần setup gì! Developer đã setup Firebase sẵn
+- Chỉ cần Sign In với Google và dùng ngay
+
+**Nếu bạn là developer và muốn tự host:**
+- Cần setup Firebase project riêng
+- Xem hướng dẫn chi tiết tại: **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**
+- Quá trình setup mất khoảng 10-15 phút
+- Hoàn toàn miễn phí với Firebase Free Tier
+
+**Nếu bạn muốn deploy extension lên Store:**
+- Xem hướng dẫn deploy tại: **[DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md)**
+- Tất cả users sẽ dùng chung Firebase của bạn
+- Chi phí rất thấp, ngay cả với hàng nghìn users!
 
 ## 📦 Cài đặt
 
@@ -128,12 +165,15 @@ Extension có thiết kế hiện đại với:
 Extension này sử dụng:
 - **Manifest V3** - Phiên bản extension mới nhất
 - **Chrome Storage API** - Lưu trữ dữ liệu local
+- **Chrome Identity API** - Google OAuth authentication
+- **Firebase Firestore** - Cloud database để sync data
+- **Firestore REST API** - Direct API calls không cần SDK
 - **Context Menus API** - Menu chuột phải
 - **Notifications API** - Thông báo khi lưu link
 - **Clipboard API** - Copy URL
-- **Vanilla JavaScript** - Không cần framework
+- **Vanilla JavaScript** - Không cần framework, lightweight
 - **Modern CSS** - Flexbox, CSS Variables, color-mix()
-- **Font Awesome** - Icons
+- **Font Awesome 6** - Icons đẹp và phong phú
 
 ## 🌐 Tương thích
 
@@ -142,7 +182,24 @@ Extension này sử dụng:
 - ✅ Microsoft Edge 88+
 - ✅ Firefox 90+ (với một số điều chỉnh nhỏ)
 
-## 📝 License
+## � Documentation
+
+### For Users
+- **[Quick Start](./QUICK_START_VI.md)** - Hướng dẫn nhanh sử dụng Cloud Sync
+- **[Privacy Policy](./PRIVACY_POLICY.md)** - Chính sách bảo mật và quyền riêng tư
+
+### For Developers  
+- **[Firebase Setup Guide](./FIREBASE_SETUP.md)** - Hướng dẫn chi tiết setup Firebase & OAuth
+- **[Deploy Checklist](./DEPLOY_CHECKLIST.md)** - Checklist deploy lên Chrome Web Store
+- **Technical Stack**: Chrome Extension Manifest V3, Firebase Firestore, Google OAuth 2.0
+
+### Important Notes
+- Extension hoạt động **offline** với local storage
+- Cloud Sync là **optional** - không bắt buộc phải đăng nhập
+- Nếu deploy lên Store, tất cả users dùng chung Firebase của developer (an toàn, isolated data)
+- Chi phí Firebase rất thấp, ngay cả với hàng nghìn users
+
+## �📝 License
 
 MIT License - Sử dụng tự do!
 

@@ -7,12 +7,28 @@
     <title>Save Link</title>
     <link rel="stylesheet" href="popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="Sortable.min.js"></script>
 </head>
 
 <body>
     <div class="container">
         <div class="header">
             <h1>Link Inventory</h1>
+            <div class="sync-status" id="syncStatus">
+                <button id="signInBtn" class="btn-sign-in" title="Sign in with Google to sync across devices">
+                    <i class="fa-brands fa-google"></i> Sign In
+                </button>
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <img id="userAvatar" class="user-avatar" src="" alt="User">
+                    <span id="userEmail" class="user-email"></span>
+                    <button id="syncNowBtn" class="btn-sync" title="Sync now">
+                        <i class="fa-solid fa-sync"></i>
+                    </button>
+                    <button id="signOutBtn" class="btn-sign-out" title="Sign out">
+                        <i class="fa-solid fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="search-box">
@@ -32,6 +48,9 @@
         </div>
     </div>
 
+    <script src="firebase-config.js"></script>
+    <script src="firebase-auth.js"></script>
+    <script src="sync-service.js"></script>
     <script src="popup.js"></script>
 </body>
 

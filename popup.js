@@ -1,8 +1,10 @@
 // Storage key
 const STORAGE_KEY = 'savedLinksData';
+const ORDER_KEY = 'categoriesOrder';
 
 // Data structure: { categoryName: { description: '', links: [{ url, description, done }, ...] } }
 let linksData = {};
+let categoriesOrder = []; // Track category order
 
 // Track expanded categories
 let expandedCategories = new Set();
@@ -10,20 +12,57 @@ let expandedCategories = new Set();
 // Load data from storage
 async function loadData() {
     try {
-        const result = await chrome.storage.local.get(STORAGE_KEY);
+        const result = await chrome.storage.local.get([STORAGE_KEY, ORDER_KEY]);
         linksData = result[STORAGE_KEY] || {};
+        categoriesOrder = result[ORDER_KEY] || [];
+
+        // Sync categoriesOrder with actual categories
+        const actualCategories = Object.keys(linksData);
+        categoriesOrder = categoriesOrder.filter(cat => actualCategories.includes(cat));
+        actualCategories.forEach(cat => {
+            if (!categoriesOrder.includes(cat)) {
+                categoriesOrder.push(cat);
+            }
+        });
+
+        console.log('📂 Loaded data:', JSON.stringify(linksData, null, 2));
+        console.log('📂 Categories order:', categoriesOrder);
         renderLinks();
     } catch (error) {
         console.error('Error loading data:', error);
     }
 }
 
-// Save data to storage
-async function saveData() {
+// Save data to storage (internal function)
+async function saveDataToStorage() {
     try {
-        await chrome.storage.local.set({ [STORAGE_KEY]: linksData });
+        await chrome.storage.local.set({
+            [STORAGE_KEY]: linksData,
+            [ORDER_KEY]: categoriesOrder,
+            dataLastModified: new Date().toISOString()
+        });
     } catch (error) {
         console.error('Error saving data:', error);
+    }
+}
+
+// Public saveData function with auto-sync
+async function saveData() {
+    await saveDataToStorage();
+    console.log('💾 Saved to local storage');
+
+    // Auto sync if signed in
+    const status = syncService.getStatus();
+    if (status.isSignedIn && !status.isSyncing) {
+        try {
+            console.log('☁️ Auto-syncing to cloud...');
+            await syncService.uploadData(linksData, categoriesOrder);
+            console.log('✅ Auto-sync completed');
+        } catch (error) {
+            console.error('Auto sync error:', error);
+        }
+    } else {
+        console.log('⏭️ Skipping auto-sync:', { isSignedIn: status.isSignedIn, isSyncing: status.isSyncing });
     }
 }
 
@@ -41,6 +80,12 @@ async function addCategory(name, description) {
         color: '#2196F3',
         links: []
     };
+
+    // Add to categoriesOrder
+    if (!categoriesOrder.includes(trimmedName)) {
+        categoriesOrder.push(trimmedName);
+    }
+
     await saveData();
     renderLinks();
 }
@@ -63,6 +108,12 @@ async function updateCategory(oldName, newName, newDescription) {
         // Rename category
         linksData[trimmedNewName] = linksData[oldName];
         delete linksData[oldName];
+
+        // Update categoriesOrder
+        const index = categoriesOrder.indexOf(oldName);
+        if (index !== -1) {
+            categoriesOrder[index] = trimmedNewName;
+        }
     }
 
     // Update description
@@ -116,6 +167,13 @@ async function deleteCategory(category) {
     if (!confirm(`Are you sure you want to delete category "${category}" and all links inside?`)) return;
 
     delete linksData[category];
+
+    // Remove from categoriesOrder
+    const index = categoriesOrder.indexOf(category);
+    if (index !== -1) {
+        categoriesOrder.splice(index, 1);
+    }
+
     await saveData();
     renderLinks();
 }
@@ -195,7 +253,8 @@ function renderLinks(searchTerm = '') {
     const linksList = document.getElementById('linksList');
     linksList.innerHTML = '';
 
-    const categories = Object.keys(linksData);
+    // Use categoriesOrder to maintain order
+    const categories = categoriesOrder.filter(cat => linksData[cat]);
 
     // Show "No items" message if no categories exist
     if (categories.length === 0) {
@@ -233,6 +292,7 @@ function renderLinks(searchTerm = '') {
         // Create category element
         const categoryDiv = document.createElement('div');
         categoryDiv.className = expandedCategories.has(category) ? 'category' : 'category collapsed';
+        categoryDiv.dataset.category = category; // For drag & drop
 
         // Set category color as CSS variable
         const categoryColor = categoryData.color || '#2196F3';
@@ -242,6 +302,7 @@ function renderLinks(searchTerm = '') {
         const categoryHeader = document.createElement('div');
         categoryHeader.className = 'category-header';
         categoryHeader.innerHTML = `
+            <i class="fa-solid fa-grip-vertical drag-handle" title="Drag to reorder"></i>
             <div class="category-info">
                 <input type="color" class="category-color-picker" value="${categoryColor}" title="Choose category color">
                 <input type="text" class="category-name-edit" value="${category}" data-original="${category}">
@@ -249,8 +310,8 @@ function renderLinks(searchTerm = '') {
                 <span class="category-count">${filteredLinks.length}</span>
             </div>
             <div class="category-actions">
-                <button class="btn-small add-link-btn" title="Add link">➕</button>
-                <button class="btn-small delete-category">❌</button>
+                <button class="btn-small add-link-btn" title="Add link"><i class="fa-solid fa-plus"></i></button>
+                <button class="btn-small delete-category" title="Delete category"><i class="fa-solid fa-xmark"></i></button>
             </div>
         `;
 
@@ -258,8 +319,10 @@ function renderLinks(searchTerm = '') {
         categoryHeader.addEventListener('click', (e) => {
             if (!e.target.classList.contains('delete-category') &&
                 !e.target.classList.contains('add-link-btn') &&
+                !e.target.classList.contains('drag-handle') &&
                 !e.target.classList.contains('category-name-edit') &&
-                !e.target.classList.contains('category-desc-edit')) {
+                !e.target.classList.contains('category-desc-edit') &&
+                !e.target.classList.contains('category-color-picker')) {
                 toggleCategory(categoryDiv);
             }
         });
@@ -345,9 +408,12 @@ function renderLinks(searchTerm = '') {
             const originalIndex = links.indexOf(link);
             const linkItem = document.createElement('div');
             linkItem.className = `link-item ${link.done ? 'done' : ''}`;
+            linkItem.dataset.linkIndex = originalIndex; // For drag & drop
+            linkItem.dataset.category = category; // For drag & drop
 
             linkItem.innerHTML = `
                 <div class="link-content">
+                    <i class="fa-solid fa-grip-vertical drag-handle-link" title="Drag to reorder"></i>
                     <input type="checkbox" class="link-checkbox" ${link.done ? 'checked' : ''}>
                     <input type="url" class="link-url-input" value="${link.url}" title="${link.url}" placeholder="URL">
                     <input type="text" class="link-desc-input" value="${link.description}" title="${link.description}"  placeholder="Description">
@@ -437,6 +503,112 @@ function renderLinks(searchTerm = '') {
         categoryDiv.appendChild(categoryLinks);
         linksList.appendChild(categoryDiv);
     });
+
+    // Initialize drag & drop after rendering
+    if (!searchTerm) {
+        initializeSortable();
+    }
+}
+
+// Initialize Sortable.js for drag & drop
+function initializeSortable() {
+    const linksList = document.getElementById('linksList');
+
+    console.log('🔧 Initializing Sortable...', {
+        hasList: !!linksList,
+        hasSortable: typeof Sortable !== 'undefined',
+        Sortable: typeof Sortable
+    });
+
+    // Enable drag & drop for categories
+    if (linksList && typeof Sortable !== 'undefined') {
+        const sortableInstance = new Sortable(linksList, {
+            animation: 200,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            filter: '.category-add-form',
+            preventOnFilter: false,
+            scroll: true,
+            forceAutoScrollFallback: true,
+            scrollSensitivity: 100,
+            scrollSpeed: 20,
+            bubbleScroll: true,
+            onStart: function (evt) {
+                console.log('🎯 Drag started', evt.item);
+            },
+            onEnd: async function (evt) {
+                console.log('✅ Drag ended', evt.oldIndex, '->', evt.newIndex);
+                console.log('📋 Before reorder categories:', categoriesOrder);
+
+                // Update categoriesOrder based on new DOM order
+                categoriesOrder = Array.from(linksList.children)
+                    .filter(div => div.classList.contains('category'))
+                    .map(div => div.dataset.category);
+
+                console.log('📋 After reorder categories:', categoriesOrder);
+                await saveData();
+                console.log('💾 Saved! categoriesOrder:', categoriesOrder);
+            }
+        });
+
+        console.log('✅ Category sortable initialized');
+        const dragHandles = linksList.querySelectorAll('.drag-handle');
+        console.log(`Found ${dragHandles.length} category drag handles`);
+    }
+
+    // Enable drag & drop for links within each category
+    const categoryLinksElements = document.querySelectorAll('.category-links');
+    console.log(`Found ${categoryLinksElements.length} category-links elements`);
+
+    categoryLinksElements.forEach((categoryLinksEl, index) => {
+        const categoryDiv = categoryLinksEl.closest('.category');
+        const category = categoryDiv?.dataset.category;
+
+        if (!category || typeof Sortable === 'undefined') return;
+
+        const linkSortable = new Sortable(categoryLinksEl, {
+            animation: 200,
+            handle: '.drag-handle-link',
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            filter: '.category-add-form',
+            preventOnFilter: false,
+            scroll: true,
+            forceAutoScrollFallback: true,
+            scrollSensitivity: 100,
+            scrollSpeed: 20,
+            bubbleScroll: true,
+            onStart: function (evt) {
+                console.log('🎯 Link drag started', evt.item);
+            },
+            onEnd: async function (evt) {
+                console.log('✅ Link drag ended', evt.oldIndex, '->', evt.newIndex);
+                console.log('📋 Before reorder:', linksData[category].links.map(l => l.description));
+
+                // Get new order of links
+                const linkItems = Array.from(categoryLinksEl.querySelectorAll('.link-item'));
+                const reorderedLinks = linkItems
+                    .map(item => {
+                        const linkIndex = parseInt(item.dataset.linkIndex);
+                        return linksData[category].links[linkIndex];
+                    })
+                    .filter(link => link); // Remove any undefined
+
+                console.log('📋 After reorder:', reorderedLinks.map(l => l.description));
+
+                // Update linksData with new order
+                linksData[category].links = reorderedLinks;
+                await saveData();
+                console.log('💾 Saved! linksData:', JSON.stringify(linksData, null, 2));
+                renderLinks(); // Re-render to update indices
+            }
+        });
+
+        console.log(`✅ Link sortable initialized for category: ${category}`);
+        const linkDragHandles = categoryLinksEl.querySelectorAll('.drag-handle-link');
+        console.log(`  Found ${linkDragHandles.length} link drag handles`);
+    });
 }
 
 // Search functionality
@@ -496,5 +668,160 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
     e.target.value = '';
 });
 
+// ============ SYNC FUNCTIONS ============
+
+// Initialize sync service
+async function initializeSync() {
+    try {
+        // Clear any stuck syncing states
+        const syncBtn = document.getElementById('syncNowBtn');
+        if (syncBtn) {
+            syncBtn.classList.remove('syncing');
+            syncBtn.disabled = false;
+        }
+
+        // Initialize sync service
+        const isSignedIn = await syncService.init();
+
+        if (isSignedIn) {
+            updateSyncUI(syncService.getStatus());
+        }
+
+        // Add event listeners
+        document.getElementById('signInBtn').addEventListener('click', handleSignIn);
+        document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
+        document.getElementById('syncNowBtn').addEventListener('click', handleSyncNow);
+
+    } catch (error) {
+        console.error('Failed to initialize sync:', error);
+    }
+}
+
+// Handle sign in
+async function handleSignIn() {
+    try {
+        const signInBtn = document.getElementById('signInBtn');
+        signInBtn.disabled = true;
+        signInBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
+
+        const user = await syncService.signIn();
+
+        // Sync data after sign in
+        await handleSyncNow();
+
+        updateSyncUI(syncService.getStatus());
+
+        // Show success notification
+        showNotification('Signed in successfully!', 'success');
+    } catch (error) {
+        console.error('Sign in error:', error);
+        showNotification('Failed to sign in: ' + error.message, 'error');
+
+        // Reset button
+        const signInBtn = document.getElementById('signInBtn');
+        signInBtn.disabled = false;
+        signInBtn.innerHTML = '<i class="fa-brands fa-google"></i> Sign In';
+    }
+}
+
+// Handle sign out
+async function handleSignOut() {
+    if (!confirm('Sign out from cloud sync?')) return;
+
+    try {
+        await syncService.signOut();
+        updateSyncUI(syncService.getStatus());
+        showNotification('Signed out successfully', 'success');
+    } catch (error) {
+        console.error('Sign out error:', error);
+        showNotification('Failed to sign out: ' + error.message, 'error');
+    }
+}
+
+// Handle sync now
+async function handleSyncNow() {
+    try {
+        const syncBtn = document.getElementById('syncNowBtn');
+        syncBtn.classList.add('syncing');
+        syncBtn.disabled = true;
+
+        console.log('🔄 Before sync - local categories order:', categoriesOrder);
+
+        // Sync current data with cloud
+        const syncResult = await syncService.syncData(linksData, categoriesOrder);
+
+        console.log('🔄 After sync - merged categories order:', syncResult.categoriesOrder);
+
+        // Update local data with merged data
+        linksData = syncResult.data;
+        categoriesOrder = syncResult.categoriesOrder;
+        await chrome.storage.local.set({
+            [STORAGE_KEY]: linksData,
+            [ORDER_KEY]: categoriesOrder
+        });
+
+        // Re-render
+        renderLinks();
+
+        showNotification('Synced successfully!', 'success');
+    } catch (error) {
+        console.error('Sync error:', error);
+        showNotification('Failed to sync: ' + error.message, 'error');
+    } finally {
+        const syncBtn = document.getElementById('syncNowBtn');
+        syncBtn.classList.remove('syncing');
+        syncBtn.disabled = false;
+    }
+}
+
+// Update sync UI
+function updateSyncUI(status) {
+    const signInBtn = document.getElementById('signInBtn');
+    const userInfo = document.getElementById('userInfo');
+    const userAvatar = document.getElementById('userAvatar');
+    const userEmail = document.getElementById('userEmail');
+
+    if (status.isSignedIn && status.user) {
+        signInBtn.style.display = 'none';
+        userInfo.style.display = 'flex';
+        userAvatar.src = status.user.picture || 'icons/icon48.png';
+        userEmail.textContent = status.user.email;
+    } else {
+        signInBtn.style.display = 'flex';
+        userInfo.style.display = 'none';
+    }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#34a853' : type === 'error' ? '#ea4335' : '#4285f4'};
+        color: white;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+    `;
+
+    document.body.appendChild(notification);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// saveData function already includes auto-sync functionality above
+
 // Initialize
+initializeSync();
 loadData();

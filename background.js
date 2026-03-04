@@ -1,5 +1,6 @@
 // Storage key
 const STORAGE_KEY = 'savedLinksData';
+const ORDER_KEY = 'categoriesOrder';
 
 // Create context menu when extension is installed
 chrome.runtime.onInstalled.addListener(async () => {
@@ -72,8 +73,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const title = tab.title;
 
     // Get existing data
-    const result = await chrome.storage.local.get(STORAGE_KEY);
+    const result = await chrome.storage.local.get([STORAGE_KEY, ORDER_KEY]);
     const linksData = result[STORAGE_KEY] || {};
+    const categoriesOrder = result[ORDER_KEY] || [];
 
     if (info.menuItemId === 'saveLinkToNew') {
         // Create new category
@@ -89,7 +91,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             }]
         };
 
-        await chrome.storage.local.set({ [STORAGE_KEY]: linksData });
+        // Add to categoriesOrder
+        if (!categoriesOrder.includes(categoryName)) {
+            categoriesOrder.push(categoryName);
+        }
+
+        await chrome.storage.local.set({
+            [STORAGE_KEY]: linksData,
+            [ORDER_KEY]: categoriesOrder,
+            dataLastModified: new Date().toISOString()
+        });
 
         chrome.notifications.create({
             type: 'basic',
@@ -110,7 +121,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
                 timestamp: Date.now()
             });
 
-            await chrome.storage.local.set({ [STORAGE_KEY]: linksData });
+            await chrome.storage.local.set({
+                [STORAGE_KEY]: linksData,
+                dataLastModified: new Date().toISOString()
+            });
 
             chrome.notifications.create({
                 type: 'basic',

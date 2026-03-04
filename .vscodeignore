@@ -1,0 +1,17 @@
+# Private keys - never package into extension
+key.pem
+*.pem
+*.key
+
+# Dev/build artifacts
+.git/
+.gitignore
+.gitattributes
+node_modules/
+out/
+.vscode-test/
+*.vsix
+.DS_Store
+
+# Example/template files
+firebase-config.example.js
