@@ -50,7 +50,7 @@ class SyncService {
     }
 
     // Upload data to Firestore
-    async uploadData(data, categoriesOrder = []) {
+    async uploadData(data, categoriesOrder = [], timestamp = null) {
         const user = firebaseAuth.getUser();
         if (!user) {
             throw new Error('Not authenticated');
@@ -61,6 +61,9 @@ class SyncService {
             const docId = this.getUserDocId();
             const url = `https://firestore.googleapis.com/v1/projects/${this.projectId}/databases/(default)/documents/${this.collection}/${docId}?key=${this.apiKey}`;
 
+            // Use provided timestamp or create new one
+            const uploadTimestamp = timestamp || new Date().toISOString();
+
             // Prepare Firestore document
             const firestoreDoc = {
                 fields: {
@@ -68,7 +71,7 @@ class SyncService {
                     email: { stringValue: user.email },
                     data: { stringValue: JSON.stringify(data) },
                     categoriesOrder: { stringValue: JSON.stringify(categoriesOrder) },
-                    lastModified: { timestampValue: new Date().toISOString() }
+                    lastModified: { timestampValue: uploadTimestamp }
                 }
             };
 
@@ -87,6 +90,13 @@ class SyncService {
             }
 
             const result = await response.json();
+
+            // Update local timestamp only if we created a new one
+            // If timestamp was provided by caller, they already updated local storage
+            if (!timestamp) {
+                await chrome.storage.local.set({ dataLastModified: uploadTimestamp });
+            }
+
             this.isSyncing = false;
             return result;
         } catch (error) {
@@ -160,8 +170,9 @@ class SyncService {
 
             if (!cloudResult) {
                 // No cloud data, upload local data
-                await this.uploadData(localData, localCategoriesOrder);
-                await chrome.storage.local.set({ dataLastModified: new Date().toISOString() });
+                const uploadTimestamp = localLastModified || new Date().toISOString();
+                await this.uploadData(localData, localCategoriesOrder, uploadTimestamp);
+                // uploadData() already sets local timestamp
                 return { data: localData, categoriesOrder: localCategoriesOrder };
             }
 
@@ -170,7 +181,6 @@ class SyncService {
             // Compare timestamps - Last Write Wins
             if (!localLastModified) {
                 // No local timestamp, cloud wins (first sync)
-                console.log('🔽 First sync - downloading cloud data');
                 await chrome.storage.local.set({ dataLastModified: cloudLastModified });
                 return { data: cloudData, categoriesOrder: cloudCategoriesOrder };
             }
@@ -180,20 +190,15 @@ class SyncService {
 
             if (cloudTime > localTime) {
                 // Cloud is newer, download and overwrite local
-                console.log('☁️ Cloud data is newer - downloading');
-                console.log('☁️ Cloud categories order:', cloudCategoriesOrder);
                 await chrome.storage.local.set({ dataLastModified: cloudLastModified });
                 return { data: cloudData, categoriesOrder: cloudCategoriesOrder };
             } else if (localTime > cloudTime) {
                 // Local is newer, upload and overwrite cloud
-                console.log('💻 Local data is newer - uploading');
-                console.log('💻 Local categories order:', localCategoriesOrder);
-                await this.uploadData(localData, localCategoriesOrder);
-                await chrome.storage.local.set({ dataLastModified: new Date().toISOString() });
+                await this.uploadData(localData, localCategoriesOrder, localLastModified);
+                // uploadData() already sets local timestamp
                 return { data: localData, categoriesOrder: localCategoriesOrder };
             } else {
                 // Same timestamp, no changes
-                console.log('✅ Data already in sync');
                 return { data: localData, categoriesOrder: localCategoriesOrder };
             }
         } catch (error) {

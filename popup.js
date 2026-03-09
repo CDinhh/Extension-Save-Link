@@ -25,44 +25,37 @@ async function loadData() {
             }
         });
 
-        console.log('📂 Loaded data:', JSON.stringify(linksData, null, 2));
-        console.log('📂 Categories order:', categoriesOrder);
         renderLinks();
     } catch (error) {
         console.error('Error loading data:', error);
     }
 }
 
-// Save data to storage (internal function)
-async function saveDataToStorage() {
+// Public saveData function with auto-sync
+async function saveData() {
+    // Create timestamp once for consistency
+    const timestamp = new Date().toISOString();
+
+    // Save to local storage with timestamp
     try {
         await chrome.storage.local.set({
             [STORAGE_KEY]: linksData,
             [ORDER_KEY]: categoriesOrder,
-            dataLastModified: new Date().toISOString()
+            dataLastModified: timestamp
         });
     } catch (error) {
         console.error('Error saving data:', error);
+        return;
     }
-}
-
-// Public saveData function with auto-sync
-async function saveData() {
-    await saveDataToStorage();
-    console.log('💾 Saved to local storage');
 
     // Auto sync if signed in
     const status = syncService.getStatus();
     if (status.isSignedIn && !status.isSyncing) {
         try {
-            console.log('☁️ Auto-syncing to cloud...');
-            await syncService.uploadData(linksData, categoriesOrder);
-            console.log('✅ Auto-sync completed');
+            await syncService.uploadData(linksData, categoriesOrder, timestamp);
         } catch (error) {
             console.error('Auto sync error:', error);
         }
-    } else {
-        console.log('⏭️ Skipping auto-sync:', { isSignedIn: status.isSignedIn, isSyncing: status.isSyncing });
     }
 }
 
@@ -514,12 +507,6 @@ function renderLinks(searchTerm = '') {
 function initializeSortable() {
     const linksList = document.getElementById('linksList');
 
-    console.log('🔧 Initializing Sortable...', {
-        hasList: !!linksList,
-        hasSortable: typeof Sortable !== 'undefined',
-        Sortable: typeof Sortable
-    });
-
     // Enable drag & drop for categories
     if (linksList && typeof Sortable !== 'undefined') {
         const sortableInstance = new Sortable(linksList, {
@@ -534,32 +521,19 @@ function initializeSortable() {
             scrollSensitivity: 100,
             scrollSpeed: 20,
             bubbleScroll: true,
-            onStart: function (evt) {
-                console.log('🎯 Drag started', evt.item);
-            },
             onEnd: async function (evt) {
-                console.log('✅ Drag ended', evt.oldIndex, '->', evt.newIndex);
-                console.log('📋 Before reorder categories:', categoriesOrder);
-
                 // Update categoriesOrder based on new DOM order
                 categoriesOrder = Array.from(linksList.children)
                     .filter(div => div.classList.contains('category'))
                     .map(div => div.dataset.category);
 
-                console.log('📋 After reorder categories:', categoriesOrder);
                 await saveData();
-                console.log('💾 Saved! categoriesOrder:', categoriesOrder);
             }
         });
-
-        console.log('✅ Category sortable initialized');
-        const dragHandles = linksList.querySelectorAll('.drag-handle');
-        console.log(`Found ${dragHandles.length} category drag handles`);
     }
 
     // Enable drag & drop for links within each category
     const categoryLinksElements = document.querySelectorAll('.category-links');
-    console.log(`Found ${categoryLinksElements.length} category-links elements`);
 
     categoryLinksElements.forEach((categoryLinksEl, index) => {
         const categoryDiv = categoryLinksEl.closest('.category');
@@ -570,6 +544,7 @@ function initializeSortable() {
         const linkSortable = new Sortable(categoryLinksEl, {
             animation: 200,
             handle: '.drag-handle-link',
+            group: 'shared-links',
             ghostClass: 'sortable-ghost',
             dragClass: 'sortable-drag',
             filter: '.category-add-form',
@@ -579,35 +554,47 @@ function initializeSortable() {
             scrollSensitivity: 100,
             scrollSpeed: 20,
             bubbleScroll: true,
-            onStart: function (evt) {
-                console.log('🎯 Link drag started', evt.item);
-            },
             onEnd: async function (evt) {
-                console.log('✅ Link drag ended', evt.oldIndex, '->', evt.newIndex);
-                console.log('📋 Before reorder:', linksData[category].links.map(l => l.description));
+                // Check if moved to different category
+                const fromCategory = evt.from.closest('.category')?.dataset.category;
+                const toCategory = evt.to.closest('.category')?.dataset.category;
 
-                // Get new order of links
-                const linkItems = Array.from(categoryLinksEl.querySelectorAll('.link-item'));
-                const reorderedLinks = linkItems
-                    .map(item => {
-                        const linkIndex = parseInt(item.dataset.linkIndex);
-                        return linksData[category].links[linkIndex];
-                    })
-                    .filter(link => link); // Remove any undefined
+                if (fromCategory && toCategory) {
+                    if (fromCategory !== toCategory) {
+                        // Moved to different category
+                        const movedLinkElement = evt.item;
+                        const oldLinkIndex = parseInt(movedLinkElement.dataset.linkIndex);
+                        const movedLink = linksData[fromCategory].links[oldLinkIndex];
 
-                console.log('📋 After reorder:', reorderedLinks.map(l => l.description));
+                        if (movedLink) {
+                            // Remove from old category
+                            linksData[fromCategory].links = linksData[fromCategory].links.filter((_, idx) => idx !== oldLinkIndex);
 
-                // Update linksData with new order
-                linksData[category].links = reorderedLinks;
-                await saveData();
-                console.log('💾 Saved! linksData:', JSON.stringify(linksData, null, 2));
-                renderLinks(); // Re-render to update indices
+                            // Get new order in target category
+                            const targetLinkItems = Array.from(evt.to.querySelectorAll('.link-item'));
+                            const newIndex = targetLinkItems.indexOf(movedLinkElement);
+
+                            // Insert into new category at correct position
+                            linksData[toCategory].links.splice(newIndex, 0, movedLink);
+                        }
+                    } else {
+                        // Reordered within same category
+                        const linkItems = Array.from(categoryLinksEl.querySelectorAll('.link-item'));
+                        const reorderedLinks = linkItems
+                            .map(item => {
+                                const linkIndex = parseInt(item.dataset.linkIndex);
+                                return linksData[category].links[linkIndex];
+                            })
+                            .filter(link => link);
+
+                        linksData[category].links = reorderedLinks;
+                    }
+
+                    await saveData();
+                    renderLinks(); // Re-render to update indices
+                }
             }
         });
-
-        console.log(`✅ Link sortable initialized for category: ${category}`);
-        const linkDragHandles = categoryLinksEl.querySelectorAll('.drag-handle-link');
-        console.log(`  Found ${linkDragHandles.length} link drag handles`);
     });
 }
 
@@ -745,12 +732,8 @@ async function handleSyncNow() {
         syncBtn.classList.add('syncing');
         syncBtn.disabled = true;
 
-        console.log('🔄 Before sync - local categories order:', categoriesOrder);
-
         // Sync current data with cloud
         const syncResult = await syncService.syncData(linksData, categoriesOrder);
-
-        console.log('🔄 After sync - merged categories order:', syncResult.categoriesOrder);
 
         // Update local data with merged data
         linksData = syncResult.data;
