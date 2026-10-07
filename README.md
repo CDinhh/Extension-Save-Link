@@ -1,60 +1,63 @@
-# Save Link - Browser Extension 🔗
+# Save Link - Browser Extension
 
 Extension trình duyệt để lưu và quản lý links với categories, màu sắc tùy chỉnh và nhiều tính năng tiện lợi.
 
-## ✨ Tính năng
+## Tính năng
 
-- 📁 **Quản lý Categories** - Phân loại links theo nhóm với màu sắc tùy chỉnh
-- 🎨 **Color Picker** - Chọn màu riêng cho mỗi category
-- 🔗 **Lưu Links** - Thêm link với URL và mô tả chi tiết
-- ✏️ **Inline Editing** - Chỉnh sửa trực tiếp trên giao diện
-- ✅ **Checkbox Done** - Đánh dấu links đã xem/hoàn thành
-- 🔍 **Tìm kiếm** - Tìm links nhanh chóng theo URL hoặc mô tả
-- 🖱️ **Context Menu** - Chuột phải để lưu trang hiện tại vào category
-- ☁️ **Cloud Sync** - Đồng bộ data giữa nhiều máy/trình duyệt qua Google Cloud ⭐ **MỚI!**
-- 🔐 **Google Sign-In** - Đăng nhập Google để sync data tự động
-- 📤 **Export/Import** - Backup và restore dữ liệu dạng JSON
-- 🌐 **Mở nhanh** - Click vào URL để mở trong tab mới
-- 📋 **Copy URL** - Copy đường dẫn nhanh chóng
-- 💾 **Auto Save** - Dữ liệu được lưu tự động trong trình duyệt
-- 🎯 **Collapsed/Expanded** - Tự động ghi nhớ trạng thái mở/đóng categories
+- **Quản lý Categories** - Phân loại links theo nhóm với màu sắc tùy chỉnh
+- **Color Picker** - Chọn màu riêng cho mỗi category
+- **Lưu Links** - Thêm link với URL và mô tả chi tiết
+- **Inline Editing** - Chỉnh sửa trực tiếp trên giao diện
+- **Checkbox Done** - Đánh dấu links đã xem/hoàn thành
+- **Tìm kiếm** - Tìm links nhanh chóng theo URL hoặc mô tả
+- **Context Menu** - Chuột phải để lưu trang hiện tại vào category
+- **Cloud Sync** - Đồng bộ data giữa nhiều máy/trình duyệt qua Google Sheet trong Drive của bạn
+- **Google Sign-In** - Đăng nhập Google để sync data tự động
+- **Export/Import** - Backup và restore dữ liệu dạng JSON
+- **Mở nhanh** - Click vào URL để mở trong tab mới
+- **Copy URL** - Copy đường dẫn nhanh chóng
+- **Auto Save** - Dữ liệu được lưu tự động trong trình duyệt
+- **Collapsed/Expanded** - Tự động ghi nhớ trạng thái mở/đóng categories
 
-## 🔄 Cloud Sync - Đồng bộ giữa nhiều thiết bị
+## Cloud Sync - Đồng bộ giữa nhiều thiết bị
 
-Extension hỗ trợ **đồng bộ data qua Google Cloud Firestore**!
+Data được lưu vào **một Google Sheet tên "Link Inventory Extension [Dont delete]" trong Google Drive của chính bạn**.
+Không có server hay database chung: mỗi người dùng giữ dữ liệu trong tài khoản Google của họ.
 
 ### Tại sao cần Cloud Sync?
 
-- ✅ Sync giữa **mọi trình duyệt**: Chrome, Edge, Brave, Cốc Cốc...
-- ✅ Sync giữa **nhiều máy tính**: laptop, PC, máy công ty...
-- ✅ **Tự động backup** data lên cloud, không lo mất dữ liệu
-- ✅ **Real-time sync** - cập nhật ngay lập tức
+- Sync giữa **mọi trình duyệt**: Chrome, Edge, Brave, Cốc Cốc...
+- Sync giữa **nhiều máy tính**: laptop, PC, máy công ty...
+- **Dữ liệu là của bạn** - nằm trong Drive của bạn, mở xem/sửa trực tiếp bằng Google Sheets
+- Extension chỉ truy cập được **file do nó tạo ra** (quyền `drive.file`), không đọc được file khác trong Drive
 
 ### Cách sử dụng Cloud Sync
 
 1. Nhấn nút **"Sign In"** trên header extension
-2. Đăng nhập bằng tài khoản Google
-3. Data sẽ tự động sync lên cloud!
-4. Cài extension trên máy khác, đăng nhập cùng tài khoản → data tự động đồng bộ
+2. Đăng nhập bằng tài khoản Google và cho phép quyền truy cập Google Drive
+3. Extension tạo sheet "Link Inventory Extension [Dont delete]" và tự động sync mỗi khi bạn thay đổi dữ liệu
+4. Cài extension trên máy khác, đăng nhập cùng tài khoản → data của hai máy được gộp lại
+5. Nhấn nút **Open sheet** (biểu tượng bảng) để mở sheet. Sửa trong sheet cũng được: lần mở popup tiếp theo sẽ tải về
 
-### Cài đặt Firebase (cho Developer)
+**Định dạng sheet:** mỗi dòng là một link với các cột
+`Category | Category description | Category color | URL | Description | Done | Added`.
+Category chưa có link nào là một dòng để trống cột URL.
 
-**Nếu bạn là end-user và cài extension từ Chrome Web Store:**
-- Không cần setup gì! Developer đã setup Firebase sẵn
-- Chỉ cần Sign In với Google và dùng ngay
+**Khi đăng nhập:** dữ liệu trên máy và trên sheet được gộp lại, không bên nào bị ghi đè. Category hoặc link chỉ có ở một bên đều được giữ. Link có ở cả hai bên (cùng category, cùng URL; không phân biệt `http`/`https` và dấu `/` cuối) giữ theo bản trên sheet.
 
-**Nếu bạn là developer và muốn tự host:**
-- Cần setup Firebase project riêng
-- Xem hướng dẫn chi tiết tại: **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**
-- Quá trình setup mất khoảng 10-15 phút
-- Hoàn toàn miễn phí với Firebase Free Tier
+**Khi hai nơi cùng sửa:** nếu cả máy này và sheet đều thay đổi kể từ lần sync trước, bản sửa mới nhất được giữ.
 
-**Nếu bạn muốn deploy extension lên Store:**
-- Xem hướng dẫn deploy tại: **[DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md)**
-- Tất cả users sẽ dùng chung Firebase của bạn
-- Chi phí rất thấp, ngay cả với hàng nghìn users!
+**Khi xóa sheet:** dữ liệu trên máy vẫn còn, sync tạm dừng và extension không tự tạo lại sheet. Nhấn nút **Sync** để tạo sheet mới từ dữ liệu trên máy, hoặc **Sign out** để ngừng đồng bộ.
 
-## 📦 Cài đặt
+### Cài đặt Google Cloud (cho Developer)
+
+Trong Google Cloud project chứa OAuth Client ID:
+1. **APIs & Services → Library**: bật **Google Sheets API** và **Google Drive API**
+2. **OAuth consent screen → Data access**: thêm scope `.../auth/drive.file`
+3. **Credentials**: OAuth client (Web application) có Authorized redirect URI
+   `https://<extension-id>.chromiumapp.org/oauth-redirect.html`
+
+## Cài đặt
 
 ### Tải từ Release (Khuyến nghị)
 
@@ -73,7 +76,7 @@ Extension hỗ trợ **đồng bộ data qua Google Cloud Firestore**!
 2. Bật **Developer mode** ở góc trên bên phải
 3. Click **Load unpacked** (hoặc **Tải tiện ích đã giải nén**)
 4. Chọn thư mục đã giải nén `Extension-Save-Link`
-5. Extension sẽ xuất hiện trên thanh công cụ!
+5. Extension sẽ xuất hiện trên thanh công cụ.
 
 #### Firefox
 
@@ -81,7 +84,7 @@ Extension hỗ trợ **đồng bộ data qua Google Cloud Firestore**!
 2. Click **Load Temporary Add-on**
 3. Chọn file `manifest.json` trong thư mục đã giải nén
 
-## 🚀 Cách sử dụng
+## Cách sử dụng
 
 ### 1. Thêm Category mới
 - Click nút **+ Add Category** bên cạnh search box
@@ -94,7 +97,7 @@ Extension hỗ trợ **đồng bộ data qua Google Cloud Firestore**!
 - Tất cả elements trong category sẽ đổi màu theo
 
 ### 3. Thêm Link
-- Click nút **➕** trong category muốn thêm
+- Click nút **+** trong category muốn thêm
 - Category tự động mở ra
 - Nhập URL và mô tả
 - Click **Save**
@@ -105,12 +108,12 @@ Extension hỗ trợ **đồng bộ data qua Google Cloud Firestore**!
 - Hoặc chọn **+ New category** để tạo category mới
 
 ### 5. Quản lý Links
-- **✅ Checkbox**: Đánh dấu link đã xem/hoàn thành
+- **Checkbox**: Đánh dấu link đã xem/hoàn thành
 - **Click URL**: Chỉnh sửa trực tiếp URL
 - **Click Description**: Chỉnh sửa mô tả
 - **Open button**: Mở link trong tab mới
-- **Copy button** 📋: Copy URL vào clipboard
-- **Delete button** ❌: Xóa link
+- **Copy button**: Copy URL vào clipboard
+- **Delete button**: Xóa link
 
 ### 6. Chỉnh sửa Category
 - Click vào tên category để đổi tên
@@ -118,14 +121,14 @@ Extension hỗ trợ **đồng bộ data qua Google Cloud Firestore**!
 - Tất cả thay đổi tự động lưu
 
 ### 7. Export/Import dữ liệu
-- **Export**: Click nút **📤 Export** ở footer → tải file JSON
-- **Import**: Click nút **📥 Import** → chọn file JSON đã backup
+- **Export**: Click nút **Export Data** ở footer → tải file JSON
+- **Import**: Click nút **Import Data** → chọn file JSON đã backup
 
 ### 8. Tìm kiếm
 - Gõ từ khóa vào ô search
 - Kết quả lọc theo URL hoặc mô tả
 
-## 📁 Cấu trúc dự án
+## Cấu trúc dự án
 
 ```
 Extension-Save-Link/
@@ -133,7 +136,12 @@ Extension-Save-Link/
 ├── popup.html         # Giao diện popup
 ├── popup.css          # Styling với CSS variables
 ├── popup.js           # Logic chính
-├── background.js      # Service worker cho context menu
+├── background.js      # Service worker: context menu, đăng nhập và sync
+├── google-auth.js     # Google Sign-In (OAuth qua launchWebAuthFlow)
+├── sheets-sync.js     # Đọc/ghi Google Sheet trong Drive của người dùng
+├── category-colors.js # Chọn màu ngẫu nhiên chưa dùng cho category mới
+├── Sortable.min.js    # Kéo thả
+├── vendor/fontawesome/ # Icons (đóng gói sẵn, chạy offline)
 ├── icons/             # Icons cho extension
 │   ├── icon16.png
 │   ├── icon48.png
@@ -141,17 +149,17 @@ Extension-Save-Link/
 └── README.md          # Documentation
 ```
 
-## 🎨 Giao diện
+## Giao diện
 
 Extension có thiết kế hiện đại với:
-- ✨ White-Blue theme sạch sẽ, tối giản
-- 🎨 Color customization cho mỗi category
-- 🔄 Smooth transitions và hover effects
-- 📱 Fixed height layout với scrollable content
-- 🎯 Inline editing cho trải nghiệm mượt mà
-- 🌈 CSS variables để thay đổi màu động
+- White-Blue theme sạch sẽ, tối giản
+- Color customization cho mỗi category
+- Smooth transitions và hover effects
+- Fixed height layout với scrollable content
+- Inline editing cho trải nghiệm mượt mà
+- CSS variables để thay đổi màu động
 
-## 💡 Tips
+## Tips
 
 - Sử dụng categories để tổ chức links theo chủ đề (Work, Learning, Tools...)
 - Chọn màu khác nhau cho mỗi category để dễ phân biệt
@@ -160,14 +168,13 @@ Extension có thiết kế hiện đại với:
 - Export dữ liệu định kỳ để backup
 - Click vào category header để collapse/expand và giữ giao diện gọn gàng
 
-## 🔧 Technical Stack
+## Technical Stack
 
 Extension này sử dụng:
 - **Manifest V3** - Phiên bản extension mới nhất
 - **Chrome Storage API** - Lưu trữ dữ liệu local
 - **Chrome Identity API** - Google OAuth authentication
-- **Firebase Firestore** - Cloud database để sync data
-- **Firestore REST API** - Direct API calls không cần SDK
+- **Google Sheets API + Drive API** - Lưu data vào Google Sheet của người dùng (REST, không cần SDK)
 - **Context Menus API** - Menu chuột phải
 - **Notifications API** - Thông báo khi lưu link
 - **Clipboard API** - Copy URL
@@ -175,34 +182,19 @@ Extension này sử dụng:
 - **Modern CSS** - Flexbox, CSS Variables, color-mix()
 - **Font Awesome 6** - Icons đẹp và phong phú
 
-## 🌐 Tương thích
+## Tương thích
 
-- ✅ Chrome 88+
-- ✅ Brave
-- ✅ Microsoft Edge 88+
-- ✅ Firefox 90+ (với một số điều chỉnh nhỏ)
+- Chrome 88+
+- Brave
+- Microsoft Edge 88+
+- Firefox 90+ (với một số điều chỉnh nhỏ)
 
-## � Documentation
-
-### For Users
-- **[Quick Start](./QUICK_START_VI.md)** - Hướng dẫn nhanh sử dụng Cloud Sync
-- **[Privacy Policy](./PRIVACY_POLICY.md)** - Chính sách bảo mật và quyền riêng tư
-
-### For Developers  
-- **[Firebase Setup Guide](./FIREBASE_SETUP.md)** - Hướng dẫn chi tiết setup Firebase & OAuth
-- **[Deploy Checklist](./DEPLOY_CHECKLIST.md)** - Checklist deploy lên Chrome Web Store
-- **Technical Stack**: Chrome Extension Manifest V3, Firebase Firestore, Google OAuth 2.0
-
-### Important Notes
+## Important Notes
 - Extension hoạt động **offline** với local storage
 - Cloud Sync là **optional** - không bắt buộc phải đăng nhập
-- Nếu deploy lên Store, tất cả users dùng chung Firebase của developer (an toàn, isolated data)
-- Chi phí Firebase rất thấp, ngay cả với hàng nghìn users
+- Mỗi user lưu data trong Google Drive của chính họ, developer không giữ dữ liệu của ai
 
-## �📝 License
+## License
 
-MIT License - Sử dụng tự do!
+MIT License.
 
----
-
-Made with ❤️ for better link management

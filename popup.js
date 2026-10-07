@@ -9,6 +9,21 @@ let categoriesOrder = []; // Track category order
 // Track expanded categories
 let expandedCategories = new Set();
 
+// Timestamp of the last save made by this popup (to ignore our own storage events)
+let lastLocalWrite = null;
+
+// Add https:// when the user typed a URL without a scheme (e.g. "google.com")
+function normalizeUrl(url) {
+    const trimmed = url.trim();
+    if (!trimmed || /^([a-z][a-z0-9+.-]*:\/\/|mailto:|about:|data:)/i.test(trimmed)) return trimmed;
+    return 'https://' + trimmed;
+}
+
+// Current text in the search box
+function getSearchTerm() {
+    return document.getElementById('searchInput').value;
+}
+
 // Load data from storage
 async function loadData() {
     try {
@@ -31,12 +46,12 @@ async function loadData() {
     }
 }
 
-// Public saveData function with auto-sync
+// Save to local storage. The background worker uploads it to the cloud when signed in,
+// so the upload still finishes after the popup closes.
 async function saveData() {
-    // Create timestamp once for consistency
     const timestamp = new Date().toISOString();
+    lastLocalWrite = timestamp;
 
-    // Save to local storage with timestamp
     try {
         await chrome.storage.local.set({
             [STORAGE_KEY]: linksData,
@@ -45,17 +60,6 @@ async function saveData() {
         });
     } catch (error) {
         console.error('Error saving data:', error);
-        return;
-    }
-
-    // Auto sync if signed in
-    const status = syncService.getStatus();
-    if (status.isSignedIn && !status.isSyncing) {
-        try {
-            await syncService.uploadData(linksData, categoriesOrder, timestamp);
-        } catch (error) {
-            console.error('Auto sync error:', error);
-        }
     }
 }
 
@@ -65,18 +69,18 @@ async function addCategory(name, description) {
 
     const trimmedName = name.trim();
     if (linksData[trimmedName]) {
-        alert('This category already exists!');
+        alert('A category with this name already exists.');
         return;
     }
     linksData[trimmedName] = {
         description: description ? description.trim() : '',
-        color: '#2196F3',
+        color: pickCategoryColor(linksData),
         links: []
     };
 
-    // Add to categoriesOrder
+    // Add to the top of categoriesOrder (newest first)
     if (!categoriesOrder.includes(trimmedName)) {
-        categoriesOrder.push(trimmedName);
+        categoriesOrder.unshift(trimmedName);
     }
 
     await saveData();
@@ -91,7 +95,7 @@ async function updateCategory(oldName, newName, newDescription) {
 
     // If name changed, check if new name already exists
     if (oldName !== trimmedNewName && linksData[trimmedNewName]) {
-        alert('This category name already exists!');
+        alert('A category with this name already exists.');
         renderLinks(); // Re-render to reset the input
         return;
     }
@@ -107,6 +111,11 @@ async function updateCategory(oldName, newName, newDescription) {
         if (index !== -1) {
             categoriesOrder[index] = trimmedNewName;
         }
+
+        // Keep the category expanded under its new name
+        if (expandedCategories.delete(oldName)) {
+            expandedCategories.add(trimmedNewName);
+        }
     }
 
     // Update description
@@ -119,13 +128,13 @@ async function updateCategory(oldName, newName, newDescription) {
 // Save new link to category
 async function saveLinkToCategory(category, url, description) {
     if (!url) {
-        alert('Please enter URL!');
+        alert('Please enter a URL.');
         return;
     }
 
-    // Add link
-    linksData[category].links.push({
-        url: url.trim(),
+    // Add link at the top (newest first)
+    linksData[category].links.unshift({
+        url: normalizeUrl(url),
         description: description.trim(),
         done: false,
         timestamp: Date.now()
@@ -137,19 +146,14 @@ async function saveLinkToCategory(category, url, description) {
 
 // Open link in new tab
 function openLink(url) {
-    chrome.tabs.create({ url });
+    chrome.tabs.create({ url: normalizeUrl(url) });
 }
 
-// Delete link
+// Delete link (an emptied category is kept, like a newly created one)
 async function deleteLink(category, linkIndex) {
     if (!confirm('Are you sure you want to delete this link?')) return;
 
     linksData[category].links.splice(linkIndex, 1);
-
-    // Remove category if empty
-    if (linksData[category].links.length === 0) {
-        delete linksData[category];
-    }
 
     await saveData();
     renderLinks();
@@ -229,7 +233,7 @@ function showAddLinkForm(category, categoryLinksElement, categoryDiv) {
             await saveLinkToCategory(category, url, description);
             formDiv.remove();
         } else {
-            alert('Please enter URL!');
+            alert('Please enter a URL.');
         }
     });
 
@@ -242,7 +246,7 @@ function showAddLinkForm(category, categoryLinksElement, categoryDiv) {
 }
 
 // Render all links
-function renderLinks(searchTerm = '') {
+function renderLinks(searchTerm = getSearchTerm()) {
     const linksList = document.getElementById('linksList');
     linksList.innerHTML = '';
 
@@ -271,8 +275,8 @@ function renderLinks(searchTerm = '') {
             (categoryData.description && categoryData.description.toLowerCase().includes(searchLower))
             : false;
 
-        // Filter links by search term
-        const filteredLinks = searchTerm
+        // Filter links by search term (a matching category shows all its links)
+        const filteredLinks = searchTerm && !categoryMatches
             ? links.filter(link =>
                 link.url.toLowerCase().includes(searchLower) ||
                 (link.description && link.description.toLowerCase().includes(searchLower))
@@ -397,7 +401,7 @@ function renderLinks(searchTerm = '') {
             categoryLinks.appendChild(emptyMessage);
         }
 
-        filteredLinks.forEach((link, index) => {
+        filteredLinks.forEach((link) => {
             const originalIndex = links.indexOf(link);
             const linkItem = document.createElement('div');
             linkItem.className = `link-item ${link.done ? 'done' : ''}`;
@@ -424,18 +428,12 @@ function renderLinks(searchTerm = '') {
                 toggleLinkDone(category, originalIndex);
             });
 
-            // Click URL to open (but not when focused for editing)
-            const urlInput = linkItem.querySelector('.link-url-input');
-            urlInput.addEventListener('click', (e) => {
-                if (!e.target.matches(':focus')) {
-                    openLink(link.url);
-                }
-            });
-
             // URL edit handler
+            const urlInput = linkItem.querySelector('.link-url-input');
             urlInput.addEventListener('blur', async (e) => {
-                const newUrl = e.target.value.trim();
+                const newUrl = normalizeUrl(e.target.value);
                 if (newUrl && newUrl !== link.url) {
+                    e.target.value = newUrl;
                     linksData[category].links[originalIndex].url = newUrl;
                     await saveData();
                 } else if (!newUrl) {
@@ -478,10 +476,10 @@ function renderLinks(searchTerm = '') {
                     const icon = btn.querySelector('i');
                     icon.className = 'fa-solid fa-check';
                     setTimeout(() => {
-                        icon.className = 'fa-regular fa-copy';
+                        icon.className = 'fa-solid fa-copy';
                     }, 1000);
                 } catch (error) {
-                    alert('Failed to copy URL');
+                    alert('Could not copy the URL.');
                 }
             });
 
@@ -498,18 +496,22 @@ function renderLinks(searchTerm = '') {
     });
 
     // Initialize drag & drop after rendering
-    if (!searchTerm) {
-        initializeSortable();
-    }
+    initializeSortable(!!searchTerm);
 }
 
-// Initialize Sortable.js for drag & drop
-function initializeSortable() {
+// Initialize Sortable.js for drag & drop.
+// Disabled while searching: hidden categories/links would be dropped from the saved order.
+function initializeSortable(isSearching) {
     const linksList = document.getElementById('linksList');
 
-    // Enable drag & drop for categories
-    if (linksList && typeof Sortable !== 'undefined') {
-        const sortableInstance = new Sortable(linksList, {
+    // Enable drag & drop for categories. #linksList survives re-renders,
+    // so create its Sortable only once instead of stacking a new one each render.
+    const existingSortable = typeof Sortable !== 'undefined' && Sortable.get(linksList);
+    if (existingSortable) {
+        existingSortable.option('disabled', isSearching);
+    } else if (linksList && typeof Sortable !== 'undefined') {
+        new Sortable(linksList, {
+            disabled: isSearching,
             animation: 200,
             handle: '.drag-handle',
             ghostClass: 'sortable-ghost',
@@ -521,7 +523,7 @@ function initializeSortable() {
             scrollSensitivity: 100,
             scrollSpeed: 20,
             bubbleScroll: true,
-            onEnd: async function (evt) {
+            onEnd: async function () {
                 // Update categoriesOrder based on new DOM order
                 categoriesOrder = Array.from(linksList.children)
                     .filter(div => div.classList.contains('category'))
@@ -532,16 +534,18 @@ function initializeSortable() {
         });
     }
 
+    if (isSearching) return;
+
     // Enable drag & drop for links within each category
     const categoryLinksElements = document.querySelectorAll('.category-links');
 
-    categoryLinksElements.forEach((categoryLinksEl, index) => {
+    categoryLinksElements.forEach((categoryLinksEl) => {
         const categoryDiv = categoryLinksEl.closest('.category');
         const category = categoryDiv?.dataset.category;
 
         if (!category || typeof Sortable === 'undefined') return;
 
-        const linkSortable = new Sortable(categoryLinksEl, {
+        new Sortable(categoryLinksEl, {
             animation: 200,
             handle: '.drag-handle-link',
             group: 'shared-links',
@@ -616,9 +620,9 @@ document.getElementById('addCategoryBtn').addEventListener('click', () => {
     addCategory(name, description || '');
 });
 
-// Export Data Handler
+// Export Data Handler (includes category order so it survives a round trip)
 document.getElementById('exportBtn').addEventListener('click', () => {
-    const dataStr = JSON.stringify(linksData, null, 2);
+    const dataStr = JSON.stringify({ data: linksData, categoriesOrder }, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -627,6 +631,43 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     link.click();
     URL.revokeObjectURL(url);
 });
+
+// Validate an imported file and return { data, order }.
+// Accepts the current export format { data, categoriesOrder } and the old one { categoryName: {...} }.
+function parseImportedData(json) {
+    const isWrapped = json && typeof json.data === 'object' && Array.isArray(json.categoriesOrder);
+    const raw = isWrapped ? json.data : json;
+
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        throw new Error('Invalid file format');
+    }
+
+    const data = {};
+    for (const [name, category] of Object.entries(raw)) {
+        if (!category || !Array.isArray(category.links)) {
+            throw new Error(`Category "${name}" has no links list`);
+        }
+        data[name] = {
+            description: typeof category.description === 'string' ? category.description : '',
+            color: typeof category.color === 'string' ? category.color : '#2196F3',
+            links: category.links
+                .filter(link => link && typeof link.url === 'string')
+                .map(link => ({
+                    url: link.url,
+                    description: typeof link.description === 'string' ? link.description : '',
+                    done: !!link.done,
+                    timestamp: link.timestamp || Date.now()
+                }))
+        };
+    }
+
+    const order = isWrapped ? json.categoriesOrder.filter(cat => data[cat]) : [];
+    Object.keys(data).forEach(cat => {
+        if (!order.includes(cat)) order.push(cat);
+    });
+
+    return { data, order };
+}
 
 // Import Data Handler
 document.getElementById('importBtn').addEventListener('click', () => {
@@ -639,16 +680,17 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
 
     try {
         const text = await file.text();
-        const importedData = JSON.parse(text);
+        const { data, order } = parseImportedData(JSON.parse(text));
 
         if (confirm('Import will replace all current data. Continue?')) {
-            linksData = importedData;
+            linksData = data;
+            categoriesOrder = order;
             await saveData();
             renderLinks();
-            alert('Data imported successfully!');
+            alert('Data imported.');
         }
     } catch (error) {
-        alert('Error importing file: ' + error.message);
+        alert('Could not import file: ' + error.message);
     }
 
     // Reset file input
@@ -656,59 +698,64 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
 });
 
 // ============ SYNC FUNCTIONS ============
+// Links are synced to a Google Sheet in the user's own Google Drive.
+// Sign in and sync run in the background worker so they survive the popup closing
+// (the Google sign-in window steals focus and usually closes the popup).
 
-// Initialize sync service
+async function sendToBackground(type, extra = {}) {
+    const response = await chrome.runtime.sendMessage({ type, ...extra });
+    if (!response || !response.ok) {
+        const error = new Error(response?.error || 'No response from background');
+        error.userAction = !!response?.userAction;
+        throw error;
+    }
+}
+
+// Initialize sync UI, then pull changes made on other devices or in the sheet
 async function initializeSync() {
+    document.getElementById('signInBtn').addEventListener('click', handleSignIn);
+    document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
+    document.getElementById('syncNowBtn').addEventListener('click', handleSyncNow);
+    document.getElementById('openSheetBtn').addEventListener('click', handleOpenSheet);
+
     try {
-        // Clear any stuck syncing states
-        const syncBtn = document.getElementById('syncNowBtn');
-        if (syncBtn) {
-            syncBtn.classList.remove('syncing');
-            syncBtn.disabled = false;
+        const { googleUser, syncState } = await chrome.storage.local.get(['googleUser', 'syncState']);
+        updateSyncUI(googleUser, syncState);
+
+        if (googleUser) {
+            // Silent: never pops up a sign-in window on its own
+            await sendToBackground('sync', { interactive: false });
         }
-
-        // Initialize sync service
-        const isSignedIn = await syncService.init();
-
-        if (isSignedIn) {
-            updateSyncUI(syncService.getStatus());
-        }
-
-        // Add event listeners
-        document.getElementById('signInBtn').addEventListener('click', handleSignIn);
-        document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
-        document.getElementById('syncNowBtn').addEventListener('click', handleSyncNow);
-
     } catch (error) {
-        console.error('Failed to initialize sync:', error);
+        console.error('Sync on open failed:', error);
+        if (error.userAction) {
+            showNotification(error.message, 'error');
+        }
     }
 }
 
 // Handle sign in
 async function handleSignIn() {
+    const signInBtn = document.getElementById('signInBtn');
+    signInBtn.disabled = true;
+    signInBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
+
     try {
-        const signInBtn = document.getElementById('signInBtn');
-        signInBtn.disabled = true;
-        signInBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
-
-        const user = await syncService.signIn();
-
-        // Sync data after sign in
-        await handleSyncNow();
-
-        updateSyncUI(syncService.getStatus());
-
-        // Show success notification
-        showNotification('Signed in successfully!', 'success');
+        // UI switches to signed-in via the googleUser storage change
+        await sendToBackground('signIn');
+        showNotification('Signed in', 'success');
     } catch (error) {
         console.error('Sign in error:', error);
-        showNotification('Failed to sign in: ' + error.message, 'error');
-
-        // Reset button
-        const signInBtn = document.getElementById('signInBtn');
-        signInBtn.disabled = false;
-        signInBtn.innerHTML = '<i class="fa-brands fa-google"></i> Sign In';
+        showNotification('Sign-in failed: ' + error.message, 'error');
+    } finally {
+        resetSignInButton();
     }
+}
+
+function resetSignInButton() {
+    const signInBtn = document.getElementById('signInBtn');
+    signInBtn.disabled = false;
+    signInBtn.innerHTML = '<i class="fa-brands fa-google"></i> Sign In';
 }
 
 // Handle sign out
@@ -716,64 +763,85 @@ async function handleSignOut() {
     if (!confirm('Sign out from cloud sync?')) return;
 
     try {
-        await syncService.signOut();
-        updateSyncUI(syncService.getStatus());
-        showNotification('Signed out successfully', 'success');
+        await sendToBackground('signOut');
+        showNotification('Signed out', 'success');
     } catch (error) {
         console.error('Sign out error:', error);
-        showNotification('Failed to sign out: ' + error.message, 'error');
+        showNotification('Sign-out failed: ' + error.message, 'error');
     }
 }
 
-// Handle sync now
+// Handle sync now (may show the Google sign-in window if the session expired)
 async function handleSyncNow() {
+    const syncBtn = document.getElementById('syncNowBtn');
+    syncBtn.classList.add('syncing');
+    syncBtn.disabled = true;
+
     try {
-        const syncBtn = document.getElementById('syncNowBtn');
-        syncBtn.classList.add('syncing');
-        syncBtn.disabled = true;
-
-        // Sync current data with cloud
-        const syncResult = await syncService.syncData(linksData, categoriesOrder);
-
-        // Update local data with merged data
-        linksData = syncResult.data;
-        categoriesOrder = syncResult.categoriesOrder;
-        await chrome.storage.local.set({
-            [STORAGE_KEY]: linksData,
-            [ORDER_KEY]: categoriesOrder
-        });
-
-        // Re-render
-        renderLinks();
-
-        showNotification('Synced successfully!', 'success');
+        await sendToBackground('sync', { interactive: true });
+        await loadData();
+        showNotification('Sync complete', 'success');
     } catch (error) {
         console.error('Sync error:', error);
-        showNotification('Failed to sync: ' + error.message, 'error');
+        showNotification('Sync failed: ' + error.message, 'error');
     } finally {
-        const syncBtn = document.getElementById('syncNowBtn');
         syncBtn.classList.remove('syncing');
         syncBtn.disabled = false;
     }
 }
 
+// Open the user's Google Sheet
+async function handleOpenSheet() {
+    const { syncState } = await chrome.storage.local.get('syncState');
+    if (syncState?.sheetId) {
+        chrome.tabs.create({ url: `https://docs.google.com/spreadsheets/d/${syncState.sheetId}/edit` });
+    }
+}
+
 // Update sync UI
-function updateSyncUI(status) {
+function updateSyncUI(user, syncState) {
     const signInBtn = document.getElementById('signInBtn');
     const userInfo = document.getElementById('userInfo');
     const userAvatar = document.getElementById('userAvatar');
     const userEmail = document.getElementById('userEmail');
+    const openSheetBtn = document.getElementById('openSheetBtn');
 
-    if (status.isSignedIn && status.user) {
+    if (user) {
         signInBtn.style.display = 'none';
         userInfo.style.display = 'flex';
-        userAvatar.src = status.user.picture || 'icons/icon48.png';
-        userEmail.textContent = status.user.email;
+        userAvatar.src = user.picture || 'icons/icon48.png';
+        userEmail.textContent = user.email;
+        const hasSheet = syncState?.userId === user.userId && syncState.sheetId;
+        openSheetBtn.style.display = hasSheet ? '' : 'none';
     } else {
+        resetSignInButton();
         signInBtn.style.display = 'flex';
         userInfo.style.display = 'none';
     }
 }
+
+// React to changes made outside this popup (background sync, context menu, sign in/out)
+chrome.storage.onChanged.addListener(async (changes, namespace) => {
+    if (namespace !== 'local') return;
+
+    if (changes.googleUser || changes.syncState) {
+        const { googleUser, syncState } = await chrome.storage.local.get(['googleUser', 'syncState']);
+        updateSyncUI(googleUser, syncState);
+    }
+
+    const modified = changes.dataLastModified;
+    if (modified && modified.newValue !== lastLocalWrite) {
+        loadData();
+    }
+});
+
+// The popup can close without firing blur on the field being edited: commit it now.
+// The blur handlers call chrome.storage.local.set synchronously, so the write is sent.
+window.addEventListener('pagehide', () => {
+    if (document.activeElement instanceof HTMLInputElement) {
+        document.activeElement.blur();
+    }
+});
 
 // Show notification
 function showNotification(message, type = 'info') {
@@ -803,8 +871,84 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// saveData function already includes auto-sync functionality above
+// "+ New category" from the right-click menu opens the popup: ask for the category name,
+// prefilled with the site's domain
+async function showPendingSave() {
+    let pending;
+    try {
+        ({ pendingNewCategory: pending } = await chrome.storage.session.get('pendingNewCategory'));
+        if (!pending) return;
+        await chrome.storage.session.remove('pendingNewCategory');
+    } catch (error) {
+        console.error('Could not read pending save:', error);
+        return;
+    }
+
+    const container = document.getElementById('pendingSave');
+    const form = document.createElement('div');
+    form.className = 'category-add-form pending-save-form';
+
+    const label = document.createElement('div');
+    label.className = 'pending-save-title';
+    label.textContent = `Save "${pending.title || pending.url}" to new category:`;
+    label.title = pending.url;
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Category name';
+    nameInput.value = pending.suggestedName;
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-primary save-link-btn';
+    saveBtn.textContent = 'Save';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'save-link-btn';
+    cancelBtn.textContent = 'Cancel';
+
+    form.append(label, nameInput, saveBtn, cancelBtn);
+    container.replaceChildren(form);
+    nameInput.focus();
+    nameInput.select();
+
+    saveBtn.addEventListener('click', async () => {
+        const name = nameInput.value.trim();
+        if (!name) {
+            nameInput.focus();
+            return;
+        }
+        await saveLinkToNewCategory(name, pending);
+        container.replaceChildren();
+        showNotification(`Saved to "${name}"`, 'success');
+    });
+
+    cancelBtn.addEventListener('click', () => container.replaceChildren());
+
+    nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveBtn.click();
+    });
+}
+
+// Create the category (or reuse one with the same name) with the link at the top
+async function saveLinkToNewCategory(name, pending) {
+    if (!linksData[name]) {
+        linksData[name] = { description: '', color: pickCategoryColor(linksData), links: [] };
+        categoriesOrder.unshift(name);
+    }
+    linksData[name].links.unshift({
+        url: pending.url,
+        description: pending.title || '',
+        done: false,
+        timestamp: Date.now()
+    });
+    expandedCategories.add(name);
+
+    await saveData();
+    renderLinks();
+}
 
 // Initialize
+// Focus search on open (autofocus alone is not always honored in extension popups)
+document.getElementById('searchInput').focus();
 initializeSync();
-loadData();
+loadData().then(showPendingSave);
