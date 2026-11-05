@@ -4,15 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Save Link Extension: gom mọi link vào một chỗ gọn gàng</title>
-    <meta name="description" content="Tiện ích trình duyệt miễn phí, mã nguồn mở, giúp sắp xếp link theo nhóm và đồng bộ qua một Google Sheet trong Google Drive của chính bạn.">
+    <title>Save Link Extension</title>
+    <meta name="description" content="Tiện ích trình duyệt miễn phí, mã nguồn mở, để lưu link theo nhóm và đồng bộ qua một Google Sheet trong Google Drive của bạn.">
     <link rel="canonical" href="https://cdinhh.github.io/Extension-Save-Link/vi/">
     <link rel="alternate" hreflang="en" href="https://cdinhh.github.io/Extension-Save-Link/">
     <link rel="alternate" hreflang="vi" href="https://cdinhh.github.io/Extension-Save-Link/vi/">
     <meta property="og:title" content="Save Link Extension">
-    <meta property="og:description" content="Sắp xếp link theo nhóm và đồng bộ qua một Google Sheet trong Drive của chính bạn.">
+    <meta property="og:description" content="Lưu link theo nhóm và đồng bộ qua một Google Sheet trong Drive của bạn.">
     <meta property="og:image" content="https://cdinhh.github.io/Extension-Save-Link/logo.png">
     <link rel="icon" type="image/png" href="../logo.png">
+    <script src="../theme.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
@@ -24,13 +25,14 @@
 
     <header class="site-head">
         <div class="wrap">
-            <a class="mark" href="./"><img src="../logo.png" alt="" width="32" height="32"><span>Save Link</span></a>
+            <a class="mark" href="./"><img src="../logo.png" alt="Save Link" width="32" height="32"><span>Save Link</span></a>
             <nav class="nav" aria-label="Điều hướng chính">
                 <a href="#features">Tính năng</a>
                 <a href="privacy.html">Quyền riêng tư</a>
                 <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub</a>
                 <a class="lang" href="../" hreflang="en" lang="en">English</a>
             </nav>
+            <button class="theme-toggle" type="button" hidden aria-pressed="false" aria-label="Chế độ tối" title="Chế độ tối"><i class="fa-solid fa-moon" aria-hidden="true"></i><i class="fa-solid fa-sun" aria-hidden="true"></i></button>
         </div>
     </header>
 
@@ -38,40 +40,33 @@
         <section class="hero">
             <div class="wrap">
                 <div>
-                    <p class="eyebrow">Tiện ích trình duyệt miễn phí, mã nguồn mở</p>
-                    <h1>Mọi link đáng giữ, <em>gọn gàng một chỗ.</em></h1>
-                    <p class="lede">Save Link Extension sắp xếp những trang bạn muốn quay lại thành các nhóm nhiều màu, và đồng bộ giữa các trình duyệt qua một Google Sheet trong Google Drive của chính bạn.</p>
+                    <h1>Lưu link theo nhóm, tìm lại khi cần.</h1>
+                    <p class="lede">Tiện ích trình duyệt để giữ lại những trang bạn muốn quay lại. Đăng nhập Google để đồng bộ giữa các trình duyệt qua một Google Sheet trong Drive của bạn.</p>
                     <div class="cta">
-                        <a class="btn btn-primary" href="https://github.com/CDinhh/Extension-Save-Link/archive/refs/tags/v2.0.0.zip">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 20h14"/></svg>
-                            Tải v2.0.0
-                        </a>
-                        <a class="btn btn-ghost" href="#permissions">Tiện ích truy cập những gì</a>
+                        <a class="btn btn-primary" href="https://github.com/CDinhh/Extension-Save-Link/archive/refs/tags/v2.0.0.zip"><i class="fa-solid fa-download" aria-hidden="true"></i>Tải v2.0.0</a>
+                        <a class="btn btn-ghost" href="#permissions">Quyền Google</a>
                     </div>
-                    <p class="fine">Chạy trên Chrome, Edge, Brave và các trình duyệt Chromium khác. Đăng nhập Google là tùy chọn.</p>
+                    <p class="fine">Miễn phí và mã nguồn mở. Chạy trên Chrome, Edge, Brave và các trình duyệt Chromium khác. Đăng nhập là tùy chọn.</p>
                 </div>
 
                 <div class="mock" role="img" aria-label="Minh họa popup của tiện ích: ba nhóm link nhiều màu, một link vừa thêm, một link đã đánh dấu xong, kèm trạng thái đã đồng bộ.">
                     <div class="mock-head">
                         Link Inventory
-                        <span class="sync-pill">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4L4 9m0-5v5h5M4 13a8 8 0 0 0 14.3 4l1.7-2m0 5v-5h-5"/></svg>
-                            Đã đồng bộ
-                        </span>
+                        <span class="sync-pill"><i class="fa-solid fa-rotate" aria-hidden="true"></i>Đã đồng bộ</span>
                     </div>
                     <div class="mock-search">Search by titles, links, descriptions</div>
                     <div class="cat" style="--c: var(--orange)">
                         <div class="cat-name">Học tập <span>3 link</span></div>
-                        <div class="row new"><i class="box"></i><b>MDN: Hướng dẫn Web Components</b></div>
-                        <div class="row"><i class="box on"></i><b>Thiết kế ứng dụng dữ liệu lớn</b></div>
+                        <div class="row new"><i class="box"></i>MDN: Hướng dẫn Web Components</div>
+                        <div class="row"><i class="box on"></i>Thiết kế ứng dụng dữ liệu lớn</div>
                     </div>
                     <div class="cat" style="--c: var(--sky)">
                         <div class="cat-name">Công việc <span>2 link</span></div>
-                        <div class="row"><i class="box"></i><b>Dashboard của team</b></div>
+                        <div class="row"><i class="box"></i>Dashboard của team</div>
                     </div>
                     <div class="cat" style="--c: var(--green)">
                         <div class="cat-name">Đọc sau <span>5 link</span></div>
-                        <div class="row"><i class="box"></i><b>Bài viết dài để dành cuối tuần</b></div>
+                        <div class="row"><i class="box"></i>Bài viết dài để dành cuối tuần</div>
                     </div>
                 </div>
             </div>
@@ -80,49 +75,49 @@
         <section class="section alt" id="features">
             <div class="wrap">
                 <div class="section-head in">
-                    <h2>Nhỏ gọn, đủ những gì bạn cần.</h2>
-                    <p>Không cần tài khoản để bắt đầu. Link của bạn dùng được ngay trong trình duyệt, kể cả khi offline.</p>
+                    <h2>Tính năng</h2>
+                    <p>Dùng được mà không cần tài khoản, kể cả khi offline.</p>
                 </div>
                 <div class="bento">
                     <article class="tile wide in">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4L4 9m0-5v5h5M4 13a8 8 0 0 0 14.3 4l1.7-2m0 5v-5h-5"/></svg></div>
-                        <h3>Cùng một danh sách trên mọi trình duyệt</h3>
-                        <p>Đăng nhập Google trên laptop, máy công ty hay bất kỳ trình duyệt Chromium nào. Thay đổi được đồng bộ tự động, link đang có được gộp lại khi đăng nhập.</p>
+                        <i class="icon fa-solid fa-rotate" aria-hidden="true"></i>
+                        <h3>Đồng bộ giữa các trình duyệt</h3>
+                        <p>Đăng nhập Google trên từng trình duyệt bạn dùng. Thay đổi được đồng bộ tự động, link đang có được gộp lại khi đăng nhập.</p>
                     </article>
-                    <article class="tile in" style="--c: var(--orange)">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div>
-                        <h3>Nhóm nhiều màu</h3>
-                        <p>Gom link theo chủ đề, chọn màu riêng cho từng nhóm và kéo thả để sắp xếp.</p>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-folder-open" aria-hidden="true"></i>
+                        <h3>Nhóm link</h3>
+                        <p>Gom link theo chủ đề, chọn màu cho từng nhóm và kéo thả để sắp xếp.</p>
                     </article>
-                    <article class="tile in" style="--c: var(--yellow)">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 4 14 7.5-6 1.8-2.2 6.2z"/></svg></div>
-                        <h3>Chuột phải là lưu</h3>
-                        <p>Lưu trang đang xem thẳng vào một nhóm ngay từ menu chuột phải.</p>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-arrow-pointer" aria-hidden="true"></i>
+                        <h3>Lưu bằng chuột phải</h3>
+                        <p>Lưu trang đang xem vào một nhóm từ menu chuột phải.</p>
                     </article>
-                    <article class="tile in" style="--c: var(--sky)">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg></div>
-                        <h3>Tìm kiếm tức thì</h3>
-                        <p>Tìm link theo địa chỉ hoặc mô tả ngay khi bạn gõ.</p>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <h3>Tìm kiếm</h3>
+                        <p>Tìm link theo địa chỉ hoặc mô tả ngay khi gõ.</p>
                     </article>
-                    <article class="tile in" style="--c: var(--green)">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-circle-check" aria-hidden="true"></i>
                         <h3>Đánh dấu đã xong</h3>
-                        <p>Tick những gì bạn đã đọc, đã xem hoặc đã làm xong.</p>
+                        <p>Tick những gì bạn đã đọc hoặc đã làm xong.</p>
                     </article>
-                    <article class="tile in" style="--c: var(--yellow)">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></div>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-pen" aria-hidden="true"></i>
                         <h3>Sửa ngay tại chỗ</h3>
-                        <p>Đổi link hoặc nhóm ngay trong danh sách, không cần mở form riêng.</p>
+                        <p>Sửa link hoặc nhóm trực tiếp trong danh sách.</p>
                     </article>
-                    <article class="tile in" style="--c: var(--sky)">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4V6a2 2 0 0 1 2-2h9v1"/></svg></div>
-                        <h3>Một cú bấm để mở hoặc sao chép</h3>
-                        <p>Mở link trong tab mới hoặc sao chép địa chỉ ngay lập tức.</p>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-copy" aria-hidden="true"></i>
+                        <h3>Mở hoặc sao chép</h3>
+                        <p>Mở link trong tab mới hoặc sao chép địa chỉ chỉ với một cú bấm.</p>
                     </article>
-                    <article class="tile in" style="--c: var(--orange)">
-                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M5 20h14"/></svg></div>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-file-export" aria-hidden="true"></i>
                         <h3>Xuất và nhập dữ liệu</h3>
-                        <p>Sao lưu toàn bộ ra file JSON và khôi phục bất cứ lúc nào.</p>
+                        <p>Sao lưu toàn bộ ra file JSON và khôi phục khi cần.</p>
                     </article>
                 </div>
             </div>
@@ -131,65 +126,69 @@
         <section class="section" id="sync">
             <div class="wrap">
                 <div class="section-head in">
-                    <h2>Dữ liệu nằm trong Drive của bạn, không nằm trên server của tác giả.</h2>
-                    <p>Không có server trung gian nào của tác giả. Tiện ích làm việc trực tiếp với Google, nên bản duy nhất trên cloud là một sheet trong chính tài khoản của bạn.</p>
+                    <h2>Link của bạn được lưu ở đâu</h2>
+                    <p>Link được lưu trong trình duyệt. Nếu đăng nhập, tiện ích lưu thêm vào một Google Sheet trong Drive của bạn và làm việc trực tiếp với Google.</p>
                 </div>
                 <div class="flow in">
                     <div class="node">
+                        <i class="icon fa-solid fa-house" aria-hidden="true"></i>
                         <strong>Trình duyệt ở nhà</strong>
                         <small>Save Link Extension</small>
                     </div>
-                    <div class="pipe" aria-hidden="true"></div>
+                    <i class="link-icon fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
                     <div class="node home">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#1f9d55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M12 9v12"/></svg>
+                        <i class="icon fa-solid fa-table" aria-hidden="true"></i>
                         <strong>Google Sheet của bạn</strong>
-                        <small>Trong Drive của bạn. Mở, sửa hoặc xóa bất cứ lúc nào.</small>
+                        <small>Bạn có thể mở, sửa hoặc xóa bất cứ lúc nào.</small>
                     </div>
-                    <div class="pipe rev" aria-hidden="true"></div>
+                    <i class="link-icon fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
                     <div class="node">
+                        <i class="icon fa-solid fa-briefcase" aria-hidden="true"></i>
                         <strong>Trình duyệt ở công ty</strong>
                         <small>Save Link Extension</small>
                     </div>
                 </div>
-                <p class="no-server in"><b>Tác giả không truy cập được dữ liệu.</b> Không analytics, không quảng cáo, không có bản sao link nào trên server khác.</p>
+                <p class="flow-note in"><b>Tác giả không xem được link của bạn.</b> Tiện ích không có server, analytics hay quảng cáo.</p>
             </div>
         </section>
 
         <section class="section alt" id="permissions">
             <div class="wrap">
                 <div class="section-head in">
-                    <h2>Google sẽ hỏi bạn những quyền gì, và để làm gì.</h2>
-                    <p>Các quyền này chỉ được yêu cầu khi bạn chọn đăng nhập. Nếu không đăng nhập, tiện ích chỉ lưu link trong trình duyệt của bạn.</p>
+                    <h2>Quyền Google</h2>
+                    <p>Google chỉ hỏi các quyền này khi bạn đăng nhập.</p>
                 </div>
                 <div class="perm">
                     <article class="in">
+                        <i class="icon fa-solid fa-user" aria-hidden="true"></i>
                         <code>openid email profile</code>
                         <h3>Tên, email và ảnh đại diện</h3>
-                        <p>Hiển thị trong popup để bạn biết tài khoản nào đang đồng bộ, và để đảm bảo việc đồng bộ luôn đúng tài khoản đó.</p>
+                        <p>Hiển thị trong popup để bạn biết tài khoản nào đang đồng bộ, và để giữ việc đồng bộ đúng tài khoản đó.</p>
                     </article>
                     <article class="in">
+                        <i class="icon fa-solid fa-file-lines" aria-hidden="true"></i>
                         <code>drive.file</code>
                         <h3>Chỉ file do tiện ích tạo ra</h3>
-                        <p>Cho phép tiện ích tạo và cập nhật sheet “Link Inventory Extension [Dont delete]”. Tiện ích không xem hay sửa được các file khác trong Drive của bạn.</p>
+                        <p>Cho phép tiện ích tạo và cập nhật sheet "Link Inventory Extension [Dont delete]". Tiện ích không xem hay sửa được các file khác trong Drive của bạn.</p>
                     </article>
                 </div>
-                <p class="no-server in" style="text-align:left">Chi tiết đầy đủ có trong <a href="privacy.html">chính sách quyền riêng tư</a>.</p>
+                <p class="more in">Xem chi tiết trong <a href="privacy.html">chính sách quyền riêng tư</a>.</p>
             </div>
         </section>
 
         <section class="section" id="install">
             <div class="wrap">
                 <div class="section-head in">
-                    <h2>Cài đặt chưa đến một phút.</h2>
+                    <h2>Cài đặt</h2>
                 </div>
                 <ol class="steps in">
                     <li><b>Tải về</b>Tải file ZIP về rồi giải nén.</li>
                     <li><b>Mở trang tiện ích</b>Vào <code>chrome://extensions</code> và bật Developer mode.</li>
-                    <li><b>Nạp tiện ích</b>Bấm “Load unpacked” và chọn thư mục vừa giải nén.</li>
-                    <li><b>Đăng nhập (tùy chọn)</b>Bấm “Sign In” trong popup để bắt đầu đồng bộ.</li>
+                    <li><b>Nạp tiện ích</b>Bấm "Load unpacked" và chọn thư mục vừa giải nén.</li>
+                    <li><b>Đăng nhập (tùy chọn)</b>Bấm "Sign In" trong popup để bắt đầu đồng bộ.</li>
                 </ol>
                 <div class="steps-cta">
-                    <a class="btn btn-primary" href="https://github.com/CDinhh/Extension-Save-Link/archive/refs/tags/v2.0.0.zip">Tải v2.0.0</a>
+                    <a class="btn btn-primary" href="https://github.com/CDinhh/Extension-Save-Link/archive/refs/tags/v2.0.0.zip"><i class="fa-solid fa-download" aria-hidden="true"></i>Tải v2.0.0</a>
                 </div>
             </div>
         </section>

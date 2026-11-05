@@ -10,6 +10,7 @@
     <link rel="alternate" hreflang="en" href="https://cdinhh.github.io/Extension-Save-Link/privacy.html">
     <link rel="alternate" hreflang="vi" href="https://cdinhh.github.io/Extension-Save-Link/vi/privacy.html">
     <link rel="icon" type="image/png" href="../logo.png">
+    <script src="../theme.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
@@ -21,13 +22,14 @@
 
     <header class="site-head">
         <div class="wrap">
-            <a class="mark" href="./"><img src="../logo.png" alt="" width="32" height="32"><span>Save Link</span></a>
+            <a class="mark" href="./"><img src="../logo.png" alt="Save Link" width="32" height="32"><span>Save Link</span></a>
             <nav class="nav" aria-label="Điều hướng chính">
                 <a href="./">Trang chủ</a>
                 <a href="privacy.html" aria-current="page">Quyền riêng tư</a>
                 <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub</a>
                 <a class="lang" href="../privacy.html" hreflang="en" lang="en">English</a>
             </nav>
+            <button class="theme-toggle" type="button" hidden aria-pressed="false" aria-label="Chế độ tối" title="Chế độ tối"><i class="fa-solid fa-moon" aria-hidden="true"></i><i class="fa-solid fa-sun" aria-hidden="true"></i></button>
         </div>
     </header>
 
@@ -36,9 +38,9 @@
             <h1>Chính sách quyền riêng tư</h1>
             <p class="meta">Cập nhật lần cuối: 6 tháng 11 năm 2026. Đây là bản dịch; nếu có khác biệt, <a href="../privacy.html" hreflang="en">bản tiếng Anh</a> được ưu tiên.</p>
             <div class="promises">
-                <div><b>Không có server của tác giả</b>Link nằm trong trình duyệt của bạn và, nếu bạn đăng nhập, trong Google Drive của chính bạn.</div>
-                <div style="--c: var(--sky)"><b>Chỉ truy cập một file</b>Tiện ích chỉ chạm tới sheet do nó tạo ra, không phải phần còn lại của Drive.</div>
-                <div style="--c: var(--orange)"><b>Không bán, không theo dõi</b>Không quảng cáo, không analytics và không bán dữ liệu của bạn.</div>
+                <div><i class="icon fa-solid fa-server" aria-hidden="true"></i><b>Không có server của tác giả</b>Link nằm trong trình duyệt của bạn và, nếu bạn đăng nhập, trong Google Drive của bạn.</div>
+                <div><i class="icon fa-solid fa-file-lines" aria-hidden="true"></i><b>Chỉ truy cập một file</b>Tiện ích chỉ truy cập được sheet do nó tạo ra.</div>
+                <div><i class="icon fa-solid fa-ban" aria-hidden="true"></i><b>Không theo dõi, không bán dữ liệu</b>Tiện ích không có quảng cáo hay analytics, và dữ liệu của bạn không bị bán.</div>
             </div>
         </div>
 
@@ -61,7 +63,7 @@
             <div class="prose">
                 <section id="about">
                     <h2>Về chính sách này</h2>
-                    <p>Save Link Extension (“tiện ích”) là tiện ích trình duyệt miễn phí, mã nguồn mở, do <a href="https://github.com/CDinhh">CDinhh</a> duy trì. Tiện ích giúp bạn lưu link theo nhóm và, nếu bạn chọn đăng nhập Google, đồng bộ link giữa các trình duyệt. Chính sách này giải thích tiện ích xử lý dữ liệu gì, dữ liệu đi đâu và cách bạn xóa nó.</p>
+                    <p>Save Link Extension ("tiện ích") là tiện ích trình duyệt miễn phí, mã nguồn mở, do <a href="https://github.com/CDinhh">CDinhh</a> duy trì. Tiện ích giúp bạn lưu link theo nhóm và, nếu bạn chọn đăng nhập Google, đồng bộ link giữa các trình duyệt. Chính sách này giải thích tiện ích xử lý dữ liệu gì, dữ liệu đi đâu và cách bạn xóa nó.</p>
                     <p>Tác giả không vận hành server nào cho tiện ích và không nhận link hay dữ liệu tài khoản Google của bạn. Bạn có thể tự kiểm tra trong <a href="https://github.com/CDinhh/Extension-Save-Link">mã nguồn</a>.</p>
                 </section>
 
@@ -109,7 +111,7 @@
                     <p>Đăng nhập là tùy chọn. Nếu bạn đăng nhập, tiện ích xin Google các quyền dưới đây và chỉ dùng đúng như mô tả:</p>
                     <ul>
                         <li><code>openid</code>, <code>email</code> và <code>profile</code>: để nhận diện tài khoản và hiển thị trong popup.</li>
-                        <li><code>https://www.googleapis.com/auth/drive.file</code>: để tạo, tìm, đọc và cập nhật bảng tính “Link Inventory Extension [Dont delete]” chứa link của bạn. Quyền này không cho phép truy cập các file khác trong Drive của bạn.</li>
+                        <li><code>https://www.googleapis.com/auth/drive.file</code>: để tạo, tìm, đọc và cập nhật bảng tính "Link Inventory Extension [Dont delete]" chứa link của bạn. Quyền này không cho phép truy cập các file khác trong Drive của bạn.</li>
                     </ul>
                     <p>Dữ liệu Google của bạn chỉ được dùng để đăng nhập và đồng bộ. Dữ liệu không bị bán, không dùng cho quảng cáo, không dùng để đánh giá tín dụng và không dùng để huấn luyện mô hình AI. Không ai, kể cả tác giả, đọc dữ liệu này, vì nó không bao giờ được gửi cho tác giả.</p>
                     <p class="callout">Việc Save Link Extension sử dụng và chuyển cho ứng dụng khác thông tin nhận từ các API của Google sẽ tuân thủ <a href="https://developers.google.com/terms/api-services-user-data-policy">Chính sách dữ liệu người dùng của Google API Services</a>, bao gồm các yêu cầu về Giới hạn sử dụng (Limited Use).</p>
@@ -144,12 +146,12 @@
 
                 <section id="website">
                     <h2>Trang web này</h2>
-                    <p>Trang web này được lưu trữ trên GitHub Pages và tải font từ Google Fonts. Các dịch vụ đó có thể xử lý dữ liệu kỹ thuật như địa chỉ IP của bạn. Bản thân trang web không đặt cookie và không dùng analytics.</p>
+                    <p>Trang web này được lưu trữ trên GitHub Pages và tải font từ Google Fonts. Các dịch vụ đó có thể xử lý dữ liệu kỹ thuật như địa chỉ IP của bạn. Trang web không đặt cookie và không dùng analytics. Trang chỉ lưu lựa chọn giao diện sáng hoặc tối của bạn trong trình duyệt.</p>
                 </section>
 
                 <section id="changes">
                     <h2>Thay đổi</h2>
-                    <p>Nếu chính sách thay đổi, phiên bản mới sẽ được đăng trên trang này với ngày “Cập nhật lần cuối” mới. Các phiên bản trước có trong <a href="https://github.com/CDinhh/Extension-Save-Link">lịch sử GitHub</a> của dự án. Nếu sau này tiện ích cần dùng dữ liệu của bạn theo cách mới, bạn sẽ được hỏi ý kiến trước.</p>
+                    <p>Nếu chính sách thay đổi, phiên bản mới sẽ được đăng trên trang này với ngày "Cập nhật lần cuối" mới. Các phiên bản trước có trong <a href="https://github.com/CDinhh/Extension-Save-Link">lịch sử GitHub</a> của dự án. Nếu sau này tiện ích cần dùng dữ liệu của bạn theo cách mới, bạn sẽ được hỏi ý kiến trước.</p>
                 </section>
 
                 <section id="contact">

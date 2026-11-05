@@ -10,6 +10,7 @@
     <link rel="alternate" hreflang="en" href="https://cdinhh.github.io/Extension-Save-Link/privacy.html">
     <link rel="alternate" hreflang="vi" href="https://cdinhh.github.io/Extension-Save-Link/vi/privacy.html">
     <link rel="icon" type="image/png" href="logo.png">
+    <script src="theme.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
@@ -21,13 +22,14 @@
 
     <header class="site-head">
         <div class="wrap">
-            <a class="mark" href="./"><img src="logo.png" alt="" width="32" height="32"><span>Save Link</span></a>
+            <a class="mark" href="./"><img src="logo.png" alt="Save Link" width="32" height="32"><span>Save Link</span></a>
             <nav class="nav" aria-label="Main">
                 <a href="./">Home</a>
                 <a href="privacy.html" aria-current="page">Privacy</a>
                 <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub</a>
                 <a class="lang" href="vi/privacy.html" hreflang="vi" lang="vi">Tiếng Việt</a>
             </nav>
+            <button class="theme-toggle" type="button" hidden aria-pressed="false" aria-label="Dark mode" title="Dark mode"><i class="fa-solid fa-moon" aria-hidden="true"></i><i class="fa-solid fa-sun" aria-hidden="true"></i></button>
         </div>
     </header>
 
@@ -36,9 +38,9 @@
             <h1>Privacy Policy</h1>
             <p class="meta">Last updated: November 6, 2026</p>
             <div class="promises">
-                <div><b>No developer server</b>Your links stay in your browser and, if you sign in, in your own Google Drive.</div>
-                <div style="--c: var(--sky)"><b>Access to one file</b>The extension can only reach the sheet it created, not the rest of your Drive.</div>
-                <div style="--c: var(--orange)"><b>Nothing sold or tracked</b>No ads, no analytics and no sale of your data.</div>
+                <div><i class="icon fa-solid fa-server" aria-hidden="true"></i><b>No developer server</b>Your links stay in your browser and, if you sign in, in your Google Drive.</div>
+                <div><i class="icon fa-solid fa-file-lines" aria-hidden="true"></i><b>Access to one file</b>The extension can only reach the sheet it created.</div>
+                <div><i class="icon fa-solid fa-ban" aria-hidden="true"></i><b>No tracking or sale</b>The extension has no ads or analytics, and your data is not sold.</div>
             </div>
         </div>
 
@@ -61,7 +63,7 @@
             <div class="prose">
                 <section id="about">
                     <h2>About this policy</h2>
-                    <p>Save Link Extension (“the extension”) is a free, open source browser extension maintained by <a href="https://github.com/CDinhh">CDinhh</a>. It lets you save links into categories and, if you choose to sign in with Google, sync them across browsers. This policy explains what data the extension handles, where that data goes and how you can remove it.</p>
+                    <p>Save Link Extension ("the extension") is a free, open source browser extension maintained by <a href="https://github.com/CDinhh">CDinhh</a>. It lets you save links into categories and, if you choose to sign in with Google, sync them across browsers. This policy explains what data the extension handles, where that data goes and how you can remove it.</p>
                     <p>The developer does not operate a server for the extension and does not receive your links or your Google account data. You can check this in the <a href="https://github.com/CDinhh/Extension-Save-Link">source code</a>.</p>
                 </section>
 
@@ -109,15 +111,15 @@
                     <p>Signing in is optional. If you sign in, the extension asks Google for these permissions and uses them only as described:</p>
                     <ul>
                         <li><code>openid</code>, <code>email</code> and <code>profile</code>: to identify your account and show it in the popup.</li>
-                        <li><code>https://www.googleapis.com/auth/drive.file</code>: to create, find, read and update the spreadsheet named “Link Inventory Extension [Dont delete]”, which stores your links. This permission does not give access to your other Drive files.</li>
+                        <li><code>https://www.googleapis.com/auth/drive.file</code>: to create, find, read and update the spreadsheet named "Link Inventory Extension [Dont delete]", which stores your links. This permission does not give access to your other Drive files.</li>
                     </ul>
                     <p>Your Google data is used only to provide sign-in and sync. It is not sold, not used for advertising, not used to determine creditworthiness and not used to train AI models. No person, including the developer, reads it, because it is never sent to the developer.</p>
-                    <p class="callout">Save Link Extension’s use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+                    <p class="callout">Save Link Extension's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
                 </section>
 
                 <section id="sharing">
                     <h2>Sharing</h2>
-                    <p>The extension sends data only to Google, over HTTPS, in order to sign you in and to read and write your sheet. Data in your Google Account is also covered by <a href="https://policies.google.com/privacy">Google’s Privacy Policy</a>. The extension contains no analytics, advertising or other third-party tracking, and your data is not shared with anyone else.</p>
+                    <p>The extension sends data only to Google, over HTTPS, in order to sign you in and to read and write your sheet. Data in your Google Account is also covered by <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>. The extension contains no analytics, advertising or other third-party tracking, and your data is not shared with anyone else.</p>
                 </section>
 
                 <section id="control">
@@ -127,14 +129,14 @@
                         <li><strong>Stop syncing:</strong> click Sign out in the popup. Your links stay in the browser and your sheet stays in Drive.</li>
                         <li><strong>Delete cloud data:</strong> delete the sheet in Google Drive. The extension pauses sync and does not recreate the sheet unless you click Sync.</li>
                         <li><strong>Delete browser data:</strong> remove the extension from your browser. This does not delete the sheet in Drive.</li>
-                        <li><strong>Revoke access:</strong> remove the extension’s access on your <a href="https://myaccount.google.com/connections">Google Account connections page</a>.</li>
+                        <li><strong>Revoke access:</strong> remove the extension's access on your <a href="https://myaccount.google.com/connections">Google Account connections page</a>.</li>
                     </ul>
-                    <p>Because the developer holds none of your data, there is nothing on the developer’s side to delete.</p>
+                    <p>Because the developer holds none of your data, there is nothing on the developer's side to delete.</p>
                 </section>
 
                 <section id="security">
                     <h2>Security</h2>
-                    <p>Requests to Google use HTTPS and Google’s standard OAuth sign-in. The extension never sees your Google password. The sheet is created private to your account and stays that way unless you share it. Data stored in your browser is only as protected as your device, so keep your device and Google Account secure.</p>
+                    <p>Requests to Google use HTTPS and Google's standard OAuth sign-in. The extension never sees your Google password. The sheet is created private to your account and stays that way unless you share it. Data stored in your browser is only as protected as your device, so keep your device and Google Account secure.</p>
                 </section>
 
                 <section id="children">
@@ -144,12 +146,12 @@
 
                 <section id="website">
                     <h2>This website</h2>
-                    <p>This website is hosted on GitHub Pages and loads its font from Google Fonts. Those services may process technical data such as your IP address. The site itself sets no cookies and uses no analytics.</p>
+                    <p>This website is hosted on GitHub Pages and loads its font from Google Fonts. Those services may process technical data such as your IP address. The site sets no cookies and uses no analytics. It only saves your light or dark theme choice in your browser.</p>
                 </section>
 
                 <section id="changes">
                     <h2>Changes</h2>
-                    <p>If this policy changes, the new version will be published on this page with a new “Last updated” date. Earlier versions are available in the project’s <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub history</a>. If the extension ever needs to use your data in a new way, your consent will be requested first.</p>
+                    <p>If this policy changes, the new version will be published on this page with a new "Last updated" date. Earlier versions are available in the project's <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub history</a>. If the extension ever needs to use your data in a new way, your consent will be requested first.</p>
                 </section>
 
                 <section id="contact">
@@ -162,7 +164,7 @@
 
     <footer class="site-foot">
         <div class="wrap">
-            <span>Save Link Extension, made by <a href="https://github.com/CDinhh">CDinhh</a></span>
+            <span>Save Link Extension by <a href="https://github.com/CDinhh">CDinhh</a></span>
             <nav aria-label="Footer">
                 <a href="./">Home</a>
                 <a href="https://github.com/CDinhh/Extension-Save-Link">Source code</a>
