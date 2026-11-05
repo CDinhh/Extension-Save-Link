@@ -19,6 +19,32 @@ function normalizeUrl(url) {
     return 'https://' + trimmed;
 }
 
+// Page titles and synced sheet cells are untrusted: escape anything placed in an innerHTML template
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => `&#${char.charCodeAt(0)};`);
+}
+
+// Short address shown under a link's title
+function displayUrl(url) {
+    try {
+        const { hostname, pathname } = new URL(normalizeUrl(url));
+        if (hostname) return hostname.replace(/^www\./, '') + (pathname === '/' ? '' : pathname);
+    } catch {
+        // Not a parsable URL: show it as it is
+    }
+    return url;
+}
+
+// A link's title falls back to its site name
+function linkTitle(link) {
+    return link.description || displayUrl(link.url).split('/')[0];
+}
+
+// Inline SVG from the bundled Phosphor Light sprite
+function icon(name, extraClass = '') {
+    return `<svg class="icon ${extraClass}" aria-hidden="true"><use href="icons/phosphor-light.svg#${name}"></use></svg>`;
+}
+
 // Current text in the search box
 function getSearchTerm() {
     return document.getElementById('searchInput').value;
@@ -69,7 +95,7 @@ async function addCategory(name, description) {
 
     const trimmedName = name.trim();
     if (linksData[trimmedName]) {
-        alert('A category with this name already exists.');
+        showNotification(t('categoryExists'), 'error');
         return;
     }
     linksData[trimmedName] = {
@@ -82,6 +108,7 @@ async function addCategory(name, description) {
     if (!categoriesOrder.includes(trimmedName)) {
         categoriesOrder.unshift(trimmedName);
     }
+    expandedCategories.add(trimmedName); // Ready for its first link
 
     await saveData();
     renderLinks();
@@ -95,7 +122,7 @@ async function updateCategory(oldName, newName, newDescription) {
 
     // If name changed, check if new name already exists
     if (oldName !== trimmedNewName && linksData[trimmedNewName]) {
-        alert('A category with this name already exists.');
+        showNotification(t('categoryExists'), 'error');
         renderLinks(); // Re-render to reset the input
         return;
     }
@@ -128,7 +155,7 @@ async function updateCategory(oldName, newName, newDescription) {
 // Save new link to category
 async function saveLinkToCategory(category, url, description) {
     if (!url) {
-        alert('Please enter a URL.');
+        showNotification(t('enterUrl'), 'error');
         return;
     }
 
@@ -145,23 +172,38 @@ async function saveLinkToCategory(category, url, description) {
 }
 
 // Open link in new tab
-function openLink(url) {
-    chrome.tabs.create({ url: normalizeUrl(url) });
+function openLink(url, active = true) {
+    chrome.tabs.create({ url: normalizeUrl(url), active });
 }
 
-// Delete link (an emptied category is kept, like a newly created one)
+// Delete link right away with an Undo (an emptied category is kept, like a newly created one)
 async function deleteLink(category, linkIndex) {
-    if (!confirm('Are you sure you want to delete this link?')) return;
-
-    linksData[category].links.splice(linkIndex, 1);
+    const [removed] = linksData[category].links.splice(linkIndex, 1);
 
     await saveData();
     renderLinks();
+
+    showNotification(t('linkDeleted'), 'info', {
+        label: t('undo'),
+        run: async () => {
+            if (!linksData[category]) return;
+            linksData[category].links.splice(linkIndex, 0, removed);
+            await saveData();
+            renderLinks();
+        }
+    });
 }
 
 // Delete category
 async function deleteCategory(category) {
-    if (!confirm(`Are you sure you want to delete category "${category}" and all links inside?`)) return;
+    const count = linksData[category].links.length;
+    const confirmed = await openDialog({
+        title: t('deleteCategoryTitle', { name: category }),
+        message: t(count === 0 ? 'deleteCategoryEmpty' : count === 1 ? 'deleteCategoryOne' : 'deleteCategoryMany', { count }),
+        confirmLabel: t('delete'),
+        danger: true
+    });
+    if (!confirmed) return;
 
     delete linksData[category];
 
@@ -177,25 +219,56 @@ async function deleteCategory(category) {
 
 // Toggle category collapse
 function toggleCategory(categoryElement) {
-    categoryElement.classList.toggle('collapsed');
-    const categoryName = categoryElement.querySelector('.category-name-edit').value;
+    const collapsed = categoryElement.classList.toggle('collapsed');
+    const categoryName = categoryElement.dataset.category;
+    categoryElement.querySelector('.category-header').setAttribute('aria-expanded', String(!collapsed));
 
-    if (categoryElement.classList.contains('collapsed')) {
+    if (collapsed) {
         expandedCategories.delete(categoryName);
     } else {
         expandedCategories.add(categoryName);
     }
 }
 
-// Toggle link done status
-async function toggleLinkDone(category, linkIndex) {
-    linksData[category].links[linkIndex].done = !linksData[category].links[linkIndex].done;
+// Toggle link done status in place, so the row keeps its position and animation
+async function toggleLinkDone(category, linkIndex, linkItem) {
+    const link = linksData[category].links[linkIndex];
+    link.done = !link.done;
+    linkItem.classList.toggle('done', link.done);
     await saveData();
-    renderLinks();
 }
 
-// Show add link form in category
-function showAddLinkForm(category, categoryLinksElement, categoryDiv) {
+// Escape cancels an edit instead of closing the popup
+function onEscape(input, action) {
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            action();
+        }
+    });
+}
+
+function createTextInput(className, placeholder, value = '') {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = `text-input ${className}`;
+    input.placeholder = placeholder;
+    input.value = value;
+    return input;
+}
+
+// The tab the popup was opened on. activeTab exposes its URL only after the toolbar click.
+async function getCurrentPage() {
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        return tab?.url && /^https?:/.test(tab.url) ? tab : null;
+    } catch {
+        return null;
+    }
+}
+
+// Show add link form in category, prefilled with the current page
+async function showAddLinkForm(category, categoryLinksElement, categoryDiv) {
     // Remove existing form if any
     const existingForm = categoryLinksElement.querySelector('.category-add-form');
     if (existingForm) {
@@ -205,60 +278,143 @@ function showAddLinkForm(category, categoryLinksElement, categoryDiv) {
 
     // Expand category if collapsed
     if (categoryDiv.classList.contains('collapsed')) {
-        categoryDiv.classList.remove('collapsed');
-        expandedCategories.add(category);
+        toggleCategory(categoryDiv);
     }
 
-    // Create form
+    const urlInput = createTextInput('form-link-url', 'https://example.com');
+    const descInput = createTextInput('form-link-description', t('titleOptional'));
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-primary save-link-btn';
+    saveBtn.textContent = t('saveLink');
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-plain';
+    cancelBtn.textContent = t('cancel');
+    const actions = document.createElement('div');
+    actions.className = 'form-actions';
+    actions.append(cancelBtn, saveBtn);
+
     const formDiv = document.createElement('div');
     formDiv.className = 'category-add-form';
-    formDiv.innerHTML = `
-        <input type="url" class="form-link-url" placeholder="https://example.com">
-        <input type="text" class="form-link-description" placeholder="Description (optional)">
-        <button class="btn-primary save-link-btn">Save</button>
-    `;
-
-    // Insert at top of category links
+    formDiv.append(urlInput, descInput, actions);
     categoryLinksElement.insertBefore(formDiv, categoryLinksElement.firstChild);
+    urlInput.focus();
 
-    // Focus on URL input
-    formDiv.querySelector('.form-link-url').focus();
+    const save = async () => {
+        const url = urlInput.value.trim();
+        if (!url) {
+            showNotification(t('enterUrl'), 'error');
+            urlInput.focus();
+            return;
+        }
+        await saveLinkToCategory(category, url, descInput.value);
+    };
 
-    // Add save handler
-    formDiv.querySelector('.save-link-btn').addEventListener('click', async () => {
-        const url = formDiv.querySelector('.form-link-url').value.trim();
-        const description = formDiv.querySelector('.form-link-description').value.trim();
+    saveBtn.addEventListener('click', save);
+    cancelBtn.addEventListener('click', () => formDiv.remove());
+    for (const input of [urlInput, descInput]) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') save();
+        });
+        onEscape(input, () => formDiv.remove());
+    }
 
-        if (url) {
-            await saveLinkToCategory(category, url, description);
-            formDiv.remove();
+    const page = await getCurrentPage();
+    if (page && !urlInput.value) {
+        urlInput.value = page.url;
+        descInput.value = page.title || '';
+        urlInput.select();
+    }
+}
+
+// Swap the category name for inputs. Both are committed together when focus leaves them.
+function startCategoryEdit(categoryHeader, category) {
+    const data = linksData[category];
+    const nameInput = createTextInput('category-name-edit', t('categoryName'), category);
+    const descInput = createTextInput('category-desc-edit', t('description'), data.description);
+    const editor = document.createElement('div');
+    editor.className = 'category-editor';
+    editor.append(nameInput, descInput);
+    categoryHeader.querySelector('.category-text').replaceWith(editor);
+    nameInput.focus();
+    nameInput.select();
+
+    editor.addEventListener('focusout', (e) => {
+        if (editor.contains(e.relatedTarget)) return;
+        const name = nameInput.value.trim() || category;
+        const description = descInput.value.trim();
+        if (name !== category || description !== (data.description || '')) {
+            updateCategory(category, name, description);
         } else {
-            alert('Please enter a URL.');
+            renderLinks();
         }
     });
 
-    // Allow Enter to save
-    formDiv.querySelector('.form-link-url').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            formDiv.querySelector('.save-link-btn').click();
-        }
+    for (const input of [nameInput, descInput]) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') input.blur();
+        });
+        onEscape(input, () => {
+            nameInput.value = category;
+            descInput.value = data.description || '';
+            input.blur();
+        });
+    }
+}
+
+// Swap the link's title and address for inputs. Committed when focus leaves them.
+function startLinkEdit(linkItem, category, linkIndex) {
+    const link = linksData[category].links[linkIndex];
+    const descInput = createTextInput('link-desc-input', t('title'), link.description);
+    const urlInput = createTextInput('link-url-input', 'https://example.com', link.url);
+    const editor = document.createElement('div');
+    editor.className = 'link-editor';
+    editor.append(descInput, urlInput);
+    linkItem.querySelector('.link-main').replaceWith(editor);
+    linkItem.querySelector('.link-actions').remove();
+    descInput.focus();
+    descInput.select();
+
+    editor.addEventListener('focusout', (e) => {
+        if (editor.contains(e.relatedTarget)) return;
+        link.url = normalizeUrl(urlInput.value) || link.url;
+        link.description = descInput.value.trim();
+        saveData();
+        renderLinks();
     });
+
+    for (const input of [descInput, urlInput]) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') input.blur();
+        });
+        onEscape(input, () => {
+            urlInput.value = link.url;
+            descInput.value = link.description || '';
+            input.blur();
+        });
+    }
 }
 
 // Render all links
 function renderLinks(searchTerm = getSearchTerm()) {
     const linksList = document.getElementById('linksList');
+    const scrollTop = linksList.scrollTop; // Re-rendering must not jump the list back to the top
     linksList.innerHTML = '';
 
     // Use categoriesOrder to maintain order
     const categories = categoriesOrder.filter(cat => linksData[cat]);
 
-    // Show "No items" message if no categories exist
+    // First-run screen
     if (categories.length === 0) {
-        const noItemsDiv = document.createElement('div');
-        noItemsDiv.className = 'no-items-message';
-        noItemsDiv.textContent = 'No items';
-        linksList.appendChild(noItemsDiv);
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+            <img src="icons/icon128.png" alt="">
+            <h2>${escapeHtml(t('emptyTitle'))}</h2>
+            <p>${escapeHtml(t('emptyText'))}</p>
+            <button class="btn-primary">${icon('plus')} ${escapeHtml(t('newCategory'))}</button>
+        `;
+        empty.querySelector('button').addEventListener('click', promptNewCategory);
+        linksList.appendChild(empty);
         return;
     }
 
@@ -286,9 +442,12 @@ function renderLinks(searchTerm = getSearchTerm()) {
         // Skip category if neither category nor links match search
         if (searchTerm && !categoryMatches && filteredLinks.length === 0) return;
 
+        // Results must be visible while searching, even in a collapsed category
+        const expanded = expandedCategories.has(category) || !!searchTerm;
+
         // Create category element
         const categoryDiv = document.createElement('div');
-        categoryDiv.className = expandedCategories.has(category) ? 'category' : 'category collapsed';
+        categoryDiv.className = expanded ? 'category' : 'category collapsed';
         categoryDiv.dataset.category = category; // For drag & drop
 
         // Set category color as CSS variable
@@ -298,67 +457,35 @@ function renderLinks(searchTerm = getSearchTerm()) {
         // Category header
         const categoryHeader = document.createElement('div');
         categoryHeader.className = 'category-header';
+        categoryHeader.tabIndex = 0;
+        categoryHeader.setAttribute('role', 'button');
+        categoryHeader.setAttribute('aria-expanded', String(expanded));
         categoryHeader.innerHTML = `
-            <i class="fa-solid fa-grip-vertical drag-handle" title="Drag to reorder"></i>
-            <div class="category-info">
-                <input type="color" class="category-color-picker" value="${categoryColor}" title="Choose category color">
-                <input type="text" class="category-name-edit" value="${category}" data-original="${category}">
-                <input type="text" class="category-desc-edit" value="${categoryData.description}" placeholder="Description">
-                <span class="category-count">${filteredLinks.length}</span>
+            <input type="color" class="category-color-picker" value="${escapeHtml(categoryColor)}" title="${escapeHtml(t('changeColor'))}" aria-label="${escapeHtml(t('categoryColor'))}">
+            <div class="category-text">
+                <span class="category-name" title="${escapeHtml(category)}">${escapeHtml(category)}</span>
+                ${categoryData.description ? `<span class="category-desc" title="${escapeHtml(categoryData.description)}">${escapeHtml(categoryData.description)}</span>` : ''}
             </div>
+            <span class="category-count">${filteredLinks.length}</span>
             <div class="category-actions">
-                <button class="btn-small add-link-btn" title="Add link"><i class="fa-solid fa-plus"></i></button>
-                <button class="btn-small delete-category" title="Delete category"><i class="fa-solid fa-xmark"></i></button>
+                <button class="btn-small edit-category" title="${escapeHtml(t('editCategory'))}" aria-label="${escapeHtml(t('editCategory'))}">${icon('pencil-simple')}</button>
+                <button class="btn-small delete-category" title="${escapeHtml(t('deleteCategory'))}" aria-label="${escapeHtml(t('deleteCategory'))}">${icon('trash')}</button>
+                <button class="btn-small add-link-btn" title="${escapeHtml(t('addLink'))}" aria-label="${escapeHtml(t('addLink'))}">${icon('plus')}</button>
             </div>
+            <span class="chevron">${icon('caret-right')}</span>
         `;
 
         // Click to collapse/expand
         categoryHeader.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('delete-category') &&
-                !e.target.classList.contains('add-link-btn') &&
-                !e.target.classList.contains('drag-handle') &&
-                !e.target.classList.contains('category-name-edit') &&
-                !e.target.classList.contains('category-desc-edit') &&
-                !e.target.classList.contains('category-color-picker')) {
+            if (!e.target.closest('.category-actions, .category-color-picker, .category-editor')) {
                 toggleCategory(categoryDiv);
             }
         });
 
-        // Category name edit handler
-        const nameEditInput = categoryHeader.querySelector('.category-name-edit');
-        nameEditInput.addEventListener('blur', async (e) => {
-            const newName = e.target.value.trim();
-            const oldName = e.target.dataset.original;
-            const desc = categoryHeader.querySelector('.category-desc-edit').value.trim();
-
-            if (newName && newName !== oldName) {
-                await updateCategory(oldName, newName, desc);
-                e.target.dataset.original = newName;
-            } else if (!newName) {
-                e.target.value = oldName; // Reset if empty
-            }
-        });
-
-        nameEditInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.target.blur();
-            }
-        });
-
-        // Category description edit handler
-        const descEditInput = categoryHeader.querySelector('.category-desc-edit');
-        descEditInput.addEventListener('blur', async (e) => {
-            const newDesc = e.target.value.trim();
-            const name = nameEditInput.value.trim();
-
-            if (newDesc !== categoryData.description) {
-                await updateCategory(category, name, newDesc);
-            }
-        });
-
-        descEditInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.target.blur();
+        categoryHeader.addEventListener('keydown', (e) => {
+            if (e.target === categoryHeader && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                toggleCategory(categoryDiv);
             }
         });
 
@@ -371,25 +498,26 @@ function renderLinks(searchTerm = getSearchTerm()) {
             await saveData();
         });
 
-        colorPicker.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
         // Add link button
-        categoryHeader.querySelector('.add-link-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
+        categoryHeader.querySelector('.add-link-btn').addEventListener('click', () => {
             showAddLinkForm(category, categoryLinks, categoryDiv);
         });
 
+        // Edit category button
+        categoryHeader.querySelector('.edit-category').addEventListener('click', () => {
+            startCategoryEdit(categoryHeader, category);
+        });
+
         // Delete category button
-        categoryHeader.querySelector('.delete-category').addEventListener('click', (e) => {
-            e.stopPropagation();
+        categoryHeader.querySelector('.delete-category').addEventListener('click', () => {
             deleteCategory(category);
         });
 
         categoryDiv.appendChild(categoryHeader);
 
         // Category links
+        const categoryBody = document.createElement('div');
+        categoryBody.className = 'category-body';
         const categoryLinks = document.createElement('div');
         categoryLinks.className = 'category-links';
 
@@ -397,7 +525,7 @@ function renderLinks(searchTerm = getSearchTerm()) {
             // Show empty state message when no links in category
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-category-message';
-            emptyMessage.textContent = 'No link yet, please add new';
+            emptyMessage.textContent = t('emptyCategory');
             categoryLinks.appendChild(emptyMessage);
         }
 
@@ -407,79 +535,53 @@ function renderLinks(searchTerm = getSearchTerm()) {
             linkItem.className = `link-item ${link.done ? 'done' : ''}`;
             linkItem.dataset.linkIndex = originalIndex; // For drag & drop
             linkItem.dataset.category = category; // For drag & drop
+            linkItem.style.setProperty('--c', categoryColor); // Keeps its colour when lifted onto <body>
 
             linkItem.innerHTML = `
-                <div class="link-content">
-                    <i class="fa-solid fa-grip-vertical drag-handle-link" title="Drag to reorder"></i>
-                    <input type="checkbox" class="link-checkbox" ${link.done ? 'checked' : ''}>
-                    <input type="url" class="link-url-input" value="${link.url}" title="${link.url}" placeholder="URL">
-                    <input type="text" class="link-desc-input" value="${link.description}" title="${link.description}"  placeholder="Description">
-                    <div class="link-actions">
-                        <button class="btn-small open-link" title="Open in new tab"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
-                        <button class="btn-small copy-link" title="Copy URL"><i class="fa-solid fa-copy"></i></button>
-                        <button class="btn-small delete-link" title="Delete"><i class="fa-solid fa-delete-left"></i></button>
-                    </div>
+                <input type="checkbox" class="link-checkbox" aria-label="${escapeHtml(t('markDone'))}" ${link.done ? 'checked' : ''}>
+                <a class="link-main" href="${escapeHtml(normalizeUrl(link.url))}" title="${escapeHtml(link.url)}">
+                    <span class="link-title">${escapeHtml(linkTitle(link))}</span>
+                    <span class="link-url">${escapeHtml(displayUrl(link.url))}</span>
+                </a>
+                <div class="link-actions">
+                    <button class="btn-small edit-link" title="${escapeHtml(t('edit'))}" aria-label="${escapeHtml(t('editLink'))}">${icon('pencil-simple')}</button>
+                    <button class="btn-small copy-link" title="${escapeHtml(t('copyUrl'))}" aria-label="${escapeHtml(t('copyUrl'))}">${icon('copy')}</button>
+                    <button class="btn-small delete-link" title="${escapeHtml(t('delete'))}" aria-label="${escapeHtml(t('deleteLink'))}">${icon('trash')}</button>
                 </div>
             `;
 
             // Checkbox handler
-            linkItem.querySelector('.link-checkbox').addEventListener('change', (e) => {
-                e.stopPropagation();
-                toggleLinkDone(category, originalIndex);
+            linkItem.querySelector('.link-checkbox').addEventListener('change', () => {
+                toggleLinkDone(category, originalIndex, linkItem);
             });
 
-            // URL edit handler
-            const urlInput = linkItem.querySelector('.link-url-input');
-            urlInput.addEventListener('blur', async (e) => {
-                const newUrl = normalizeUrl(e.target.value);
-                if (newUrl && newUrl !== link.url) {
-                    e.target.value = newUrl;
-                    linksData[category].links[originalIndex].url = newUrl;
-                    await saveData();
-                } else if (!newUrl) {
-                    e.target.value = link.url; // Reset if empty
-                }
+            // Open in a new tab. Ctrl/Cmd-click or middle-click keeps the popup open.
+            const linkMain = linkItem.querySelector('.link-main');
+            linkMain.addEventListener('click', (e) => {
+                e.preventDefault();
+                openLink(link.url, !(e.ctrlKey || e.metaKey));
+            });
+            linkMain.addEventListener('auxclick', (e) => {
+                e.preventDefault();
+                if (e.button === 1) openLink(link.url, false);
             });
 
-            urlInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.target.blur();
-                }
-            });
-
-            // Description edit handler
-            const descInput = linkItem.querySelector('.link-desc-input');
-            descInput.addEventListener('blur', async (e) => {
-                const newDesc = e.target.value.trim();
-                if (newDesc !== link.description) {
-                    linksData[category].links[originalIndex].description = newDesc;
-                    await saveData();
-                }
-            });
-
-            descInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.target.blur();
-                }
-            });
-
-            // Open link button
-            linkItem.querySelector('.open-link').addEventListener('click', () => {
-                openLink(link.url);
+            // Edit link button
+            linkItem.querySelector('.edit-link').addEventListener('click', () => {
+                startLinkEdit(linkItem, category, originalIndex);
             });
 
             // Copy link button
             linkItem.querySelector('.copy-link').addEventListener('click', async () => {
                 try {
                     await navigator.clipboard.writeText(link.url);
-                    const btn = linkItem.querySelector('.copy-link');
-                    const icon = btn.querySelector('i');
-                    icon.className = 'fa-solid fa-check';
+                    const copyBtn = linkItem.querySelector('.copy-link');
+                    copyBtn.innerHTML = icon('check');
                     setTimeout(() => {
-                        icon.className = 'fa-solid fa-copy';
+                        copyBtn.innerHTML = icon('copy');
                     }, 1000);
                 } catch (error) {
-                    alert('Could not copy the URL.');
+                    showNotification(t('copyFailed'), 'error');
                 }
             });
 
@@ -491,44 +593,110 @@ function renderLinks(searchTerm = getSearchTerm()) {
             categoryLinks.appendChild(linkItem);
         });
 
-        categoryDiv.appendChild(categoryLinks);
+        categoryBody.appendChild(categoryLinks);
+        categoryDiv.appendChild(categoryBody);
         linksList.appendChild(categoryDiv);
     });
+
+    if (searchTerm && linksList.children.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.className = 'no-results';
+        noResults.textContent = t('noResults', { term: searchTerm });
+        linksList.appendChild(noResults);
+    }
+
+    linksList.scrollTop = scrollTop;
 
     // Initialize drag & drop after rendering
     initializeSortable(!!searchTerm);
 }
 
-// Initialize Sortable.js for drag & drop.
-// Disabled while searching: hidden categories/links would be dropped from the saved order.
+// Drag & drop uses Sortable's pointer-based fallback: native HTML5 drag goes through the OS drag loop,
+// which is unreliable inside extension popups. Disabled while searching, because hidden categories
+// and links would be dropped from the saved order.
+const SORTABLE_COMMON = {
+    forceFallback: true,
+    fallbackTolerance: 4, // a click that wobbles a few pixels is still a click
+    animation: 200,
+    easing: 'cubic-bezier(.32, .72, 0, 1)',
+    ghostClass: 'drag-placeholder',
+    chosenClass: 'drag-chosen',
+    fallbackClass: 'drag-lifted',
+    preventOnFilter: false,
+    scroll: true,
+    scrollSensitivity: 60,
+    scrollSpeed: 14,
+    bubbleScroll: true,
+};
+
+// While a link is dragged, hovering a collapsed category's header for a moment opens it
+const HOVER_EXPAND_MS = 500;
+let hoverExpandTimer = null;
+let hoverExpandTarget = null;
+
+function categoryHeaderAt(x, y) {
+    return document.elementFromPoint(x, y)?.closest('.category-header') || null;
+}
+
+function expandOnHover(event) {
+    const header = categoryHeaderAt(event.clientX, event.clientY);
+    const categoryDiv = header?.closest('.category.collapsed') || null;
+    if (categoryDiv === hoverExpandTarget) return;
+    clearTimeout(hoverExpandTimer);
+    hoverExpandTarget = categoryDiv;
+    if (categoryDiv) {
+        hoverExpandTimer = setTimeout(() => {
+            if (categoryDiv.classList.contains('collapsed')) toggleCategory(categoryDiv);
+        }, HOVER_EXPAND_MS);
+    }
+}
+
+// Outline the category a dragged link would land in
+function markDropTarget(list) {
+    const target = list?.closest('.category') || null;
+    document.querySelectorAll('.category.drop-target').forEach((el) => {
+        if (el !== target) el.classList.remove('drop-target');
+    });
+    target?.classList.add('drop-target');
+}
+
+function stopExpandOnHover() {
+    clearTimeout(hoverExpandTimer);
+    hoverExpandTimer = null;
+    hoverExpandTarget = null;
+    document.removeEventListener('pointermove', expandOnHover);
+    document.removeEventListener('mousemove', expandOnHover);
+}
+
+// Move a link to the top of another category (drop on a category's header)
+async function moveLinkToCategory(fromCategory, linkIndex, toCategory) {
+    const [moved] = linksData[fromCategory].links.splice(linkIndex, 1);
+    if (!moved) return;
+    linksData[toCategory].links.unshift(moved);
+    expandedCategories.add(toCategory);
+    await saveData();
+    renderLinks();
+}
+
 function initializeSortable(isSearching) {
     const linksList = document.getElementById('linksList');
+    if (typeof Sortable === 'undefined') return;
 
-    // Enable drag & drop for categories. #linksList survives re-renders,
-    // so create its Sortable only once instead of stacking a new one each render.
-    const existingSortable = typeof Sortable !== 'undefined' && Sortable.get(linksList);
+    // #linksList survives re-renders, so its Sortable is created only once
+    const existingSortable = Sortable.get(linksList);
     if (existingSortable) {
         existingSortable.option('disabled', isSearching);
-    } else if (linksList && typeof Sortable !== 'undefined') {
+    } else {
         new Sortable(linksList, {
+            ...SORTABLE_COMMON,
             disabled: isSearching,
-            animation: 200,
-            handle: '.drag-handle',
-            ghostClass: 'sortable-ghost',
-            dragClass: 'sortable-drag',
-            filter: '.category-add-form',
-            preventOnFilter: false,
-            scroll: true,
-            forceAutoScrollFallback: true,
-            scrollSensitivity: 100,
-            scrollSpeed: 20,
-            bubbleScroll: true,
+            draggable: '.category',
+            handle: '.category-header',
+            filter: 'button, input, .category-editor',
             onEnd: async function () {
-                // Update categoriesOrder based on new DOM order
                 categoriesOrder = Array.from(linksList.children)
                     .filter(div => div.classList.contains('category'))
                     .map(div => div.dataset.category);
-
                 await saveData();
             }
         });
@@ -536,67 +704,59 @@ function initializeSortable(isSearching) {
 
     if (isSearching) return;
 
-    // Enable drag & drop for links within each category
-    const categoryLinksElements = document.querySelectorAll('.category-links');
-
-    categoryLinksElements.forEach((categoryLinksEl) => {
-        const categoryDiv = categoryLinksEl.closest('.category');
-        const category = categoryDiv?.dataset.category;
-
-        if (!category || typeof Sortable === 'undefined') return;
+    document.querySelectorAll('.category-links').forEach((categoryLinksEl) => {
+        const category = categoryLinksEl.closest('.category')?.dataset.category;
+        if (!category) return;
 
         new Sortable(categoryLinksEl, {
-            animation: 200,
-            handle: '.drag-handle-link',
+            ...SORTABLE_COMMON,
+            draggable: '.link-item',
             group: 'shared-links',
-            ghostClass: 'sortable-ghost',
-            dragClass: 'sortable-drag',
-            filter: '.category-add-form',
-            preventOnFilter: false,
-            scroll: true,
-            forceAutoScrollFallback: true,
-            scrollSensitivity: 100,
-            scrollSpeed: 20,
-            bubbleScroll: true,
+            filter: 'button, input, .category-add-form, .link-editor',
+            // The lifted copy is position: fixed. Inside a .category its backdrop-filter becomes the
+            // containing block and the copy drifts away from the pointer, so it lives on <body>.
+            fallbackOnBody: true,
+            onStart: function (evt) {
+                markDropTarget(evt.from);
+                document.addEventListener('pointermove', expandOnHover);
+                document.addEventListener('mousemove', expandOnHover);
+            },
+            onMove: function (evt) {
+                markDropTarget(evt.to);
+                return true;
+            },
             onEnd: async function (evt) {
-                // Check if moved to different category
+                stopExpandOnHover();
+                markDropTarget(null);
                 const fromCategory = evt.from.closest('.category')?.dataset.category;
                 const toCategory = evt.to.closest('.category')?.dataset.category;
+                const oldLinkIndex = parseInt(evt.item.dataset.linkIndex);
 
-                if (fromCategory && toCategory) {
-                    if (fromCategory !== toCategory) {
-                        // Moved to different category
-                        const movedLinkElement = evt.item;
-                        const oldLinkIndex = parseInt(movedLinkElement.dataset.linkIndex);
-                        const movedLink = linksData[fromCategory].links[oldLinkIndex];
-
-                        if (movedLink) {
-                            // Remove from old category
-                            linksData[fromCategory].links = linksData[fromCategory].links.filter((_, idx) => idx !== oldLinkIndex);
-
-                            // Get new order in target category
-                            const targetLinkItems = Array.from(evt.to.querySelectorAll('.link-item'));
-                            const newIndex = targetLinkItems.indexOf(movedLinkElement);
-
-                            // Insert into new category at correct position
-                            linksData[toCategory].links.splice(newIndex, 0, movedLink);
-                        }
-                    } else {
-                        // Reordered within same category
-                        const linkItems = Array.from(categoryLinksEl.querySelectorAll('.link-item'));
-                        const reorderedLinks = linkItems
-                            .map(item => {
-                                const linkIndex = parseInt(item.dataset.linkIndex);
-                                return linksData[category].links[linkIndex];
-                            })
-                            .filter(link => link);
-
-                        linksData[category].links = reorderedLinks;
-                    }
-
-                    await saveData();
-                    renderLinks(); // Re-render to update indices
+                // Released on a category header: the link goes to the top of that category
+                const point = evt.originalEvent?.changedTouches?.[0] || evt.originalEvent;
+                const header = point && categoryHeaderAt(point.clientX, point.clientY);
+                const headerCategory = header?.closest('.category')?.dataset.category;
+                if (fromCategory && headerCategory && headerCategory !== fromCategory) {
+                    await moveLinkToCategory(fromCategory, oldLinkIndex, headerCategory);
+                    return;
                 }
+
+                if (!fromCategory || !toCategory) return;
+                if (fromCategory !== toCategory) {
+                    const movedLink = linksData[fromCategory].links[oldLinkIndex];
+                    if (movedLink) {
+                        linksData[fromCategory].links = linksData[fromCategory].links.filter((_, idx) => idx !== oldLinkIndex);
+                        const newIndex = Array.from(evt.to.querySelectorAll('.link-item')).indexOf(evt.item);
+                        linksData[toCategory].links.splice(newIndex, 0, movedLink);
+                    }
+                } else {
+                    linksData[category].links = Array.from(categoryLinksEl.querySelectorAll('.link-item'))
+                        .map(item => linksData[category].links[parseInt(item.dataset.linkIndex)])
+                        .filter(link => link);
+                }
+
+                await saveData();
+                renderLinks(); // Re-render to update indices
             }
         });
     });
@@ -608,17 +768,115 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         renderLinks(e.target.value);
-    }, 300);
+    }, 150);
+});
+
+// Escape clears the search first. The next Escape closes the popup as usual.
+document.getElementById('searchInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && e.target.value) {
+        e.preventDefault();
+        e.target.value = '';
+        renderLinks('');
+    }
 });
 
 // Add Category Button Handler
-document.getElementById('addCategoryBtn').addEventListener('click', () => {
-    const name = prompt('Category name:');
-    if (!name) return;
+document.getElementById('addCategoryBtn').addEventListener('click', promptNewCategory);
 
-    const description = prompt('Category description (optional):');
-    addCategory(name, description || '');
-});
+async function promptNewCategory() {
+    const values = await openDialog({
+        title: t('newCategory'),
+        fields: [
+            {
+                name: 'name',
+                label: t('name'),
+                placeholder: t('namePlaceholder'),
+                validate: (value) => {
+                    if (!value.trim()) return t('enterName');
+                    return linksData[value.trim()] ? t('categoryExists') : '';
+                }
+            },
+            { name: 'description', label: t('descriptionOptional'), placeholder: t('descriptionPlaceholder') }
+        ],
+        confirmLabel: t('create')
+    });
+    if (values) addCategory(values.name, values.description);
+}
+
+// Modal used instead of alert/confirm/prompt. Resolves to the field values (true when there
+// are no fields), or to null when cancelled. Text goes in through textContent, never as HTML.
+function openDialog({ title, message, fields = [], confirmLabel = 'OK', danger = false }) {
+    const dialog = document.getElementById('appDialog');
+    const form = document.createElement('form');
+    form.className = 'dialog-form';
+    form.noValidate = true;
+
+    const heading = document.createElement('h2');
+    heading.textContent = title;
+    form.append(heading);
+
+    if (message) {
+        const text = document.createElement('p');
+        text.textContent = message;
+        form.append(text);
+    }
+
+    const inputs = fields.map((field) => {
+        const label = document.createElement('label');
+        label.className = 'dialog-field';
+        label.textContent = field.label;
+        const input = createTextInput('', field.placeholder || '');
+        const error = document.createElement('span');
+        error.className = 'dialog-error';
+        error.hidden = true;
+        label.append(input, error);
+        form.append(label);
+        input.addEventListener('input', () => { error.hidden = true; });
+        return { field, input, error };
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn-plain';
+    cancelBtn.textContent = t('cancel');
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'submit';
+    confirmBtn.className = danger ? 'btn-primary danger' : 'btn-primary';
+    confirmBtn.textContent = confirmLabel;
+    const actions = document.createElement('div');
+    actions.className = 'dialog-actions';
+    actions.append(cancelBtn, confirmBtn);
+    form.append(actions);
+    dialog.replaceChildren(form);
+
+    return new Promise((resolve) => {
+        let result = null;
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            for (const { field, input, error } of inputs) {
+                const problem = field.validate?.(input.value);
+                if (problem) {
+                    error.textContent = problem;
+                    error.hidden = false;
+                    input.focus();
+                    return;
+                }
+            }
+            result = fields.length ? Object.fromEntries(inputs.map(({ field, input }) => [field.name, input.value])) : true;
+            dialog.close();
+        });
+
+        cancelBtn.addEventListener('click', () => dialog.close());
+        dialog.onclick = (e) => {
+            if (e.target === dialog) dialog.close();
+        };
+        dialog.addEventListener('close', () => resolve(result), { once: true });
+        dialog.showModal();
+        // A destructive action must not be one Enter away
+        (inputs[0]?.input ?? (danger ? cancelBtn : confirmBtn)).focus();
+    });
+}
 
 // Export Data Handler (includes category order so it survives a round trip)
 document.getElementById('exportBtn').addEventListener('click', () => {
@@ -639,13 +897,13 @@ function parseImportedData(json) {
     const raw = isWrapped ? json.data : json;
 
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-        throw new Error('Invalid file format');
+        throw new Error(t('invalidFile'));
     }
 
     const data = {};
     for (const [name, category] of Object.entries(raw)) {
         if (!category || !Array.isArray(category.links)) {
-            throw new Error(`Category "${name}" has no links list`);
+            throw new Error(t('noLinksList', { name }));
         }
         data[name] = {
             description: typeof category.description === 'string' ? category.description : '',
@@ -682,15 +940,21 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
         const text = await file.text();
         const { data, order } = parseImportedData(JSON.parse(text));
 
-        if (confirm('Import will replace all current data. Continue?')) {
+        const confirmed = await openDialog({
+            title: t('replaceTitle'),
+            message: t('replaceText', { file: file.name }),
+            confirmLabel: t('replace'),
+            danger: true
+        });
+        if (confirmed) {
             linksData = data;
             categoriesOrder = order;
             await saveData();
             renderLinks();
-            alert('Data imported.');
+            showNotification(t('imported'), 'success');
         }
     } catch (error) {
-        alert('Could not import file: ' + error.message);
+        showNotification(t('importFailed', { error: error.message }), 'error');
     }
 
     // Reset file input
@@ -705,7 +969,7 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
 async function sendToBackground(type, extra = {}) {
     const response = await chrome.runtime.sendMessage({ type, ...extra });
     if (!response || !response.ok) {
-        const error = new Error(response?.error || 'No response from background');
+        const error = new Error(response?.error || t('noResponse'));
         error.userAction = !!response?.userAction;
         throw error;
     }
@@ -738,15 +1002,15 @@ async function initializeSync() {
 async function handleSignIn() {
     const signInBtn = document.getElementById('signInBtn');
     signInBtn.disabled = true;
-    signInBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
+    signInBtn.innerHTML = `${icon('arrows-clockwise', 'spin')} <span>${escapeHtml(t('signingIn'))}</span>`;
 
     try {
         // UI switches to signed-in via the googleUser storage change
         await sendToBackground('signIn');
-        showNotification('Signed in', 'success');
+        showNotification(t('signedIn'), 'success');
     } catch (error) {
         console.error('Sign in error:', error);
-        showNotification('Sign-in failed: ' + error.message, 'error');
+        showNotification(t('signInFailed', { error: error.message }), 'error');
     } finally {
         resetSignInButton();
     }
@@ -755,19 +1019,25 @@ async function handleSignIn() {
 function resetSignInButton() {
     const signInBtn = document.getElementById('signInBtn');
     signInBtn.disabled = false;
-    signInBtn.innerHTML = '<i class="fa-brands fa-google"></i> Sign In';
+    signInBtn.innerHTML = `${icon('google-logo')} <span data-i18n="signIn">${escapeHtml(t('signIn'))}</span>`;
 }
 
 // Handle sign out
 async function handleSignOut() {
-    if (!confirm('Sign out from cloud sync?')) return;
+    closeAccountMenu();
+    const confirmed = await openDialog({
+        title: t('signOutTitle'),
+        message: t('signOutText'),
+        confirmLabel: t('signOut')
+    });
+    if (!confirmed) return;
 
     try {
         await sendToBackground('signOut');
-        showNotification('Signed out', 'success');
+        showNotification(t('signedOut'), 'success');
     } catch (error) {
         console.error('Sign out error:', error);
-        showNotification('Sign-out failed: ' + error.message, 'error');
+        showNotification(t('signOutFailed', { error: error.message }), 'error');
     }
 }
 
@@ -780,18 +1050,24 @@ async function handleSyncNow() {
     try {
         await sendToBackground('sync', { interactive: true });
         await loadData();
-        showNotification('Sync complete', 'success');
+        showNotification(t('syncComplete'), 'success');
     } catch (error) {
         console.error('Sync error:', error);
-        showNotification('Sync failed: ' + error.message, 'error');
+        showNotification(t('syncFailed', { error: error.message }), 'error');
     } finally {
         syncBtn.classList.remove('syncing');
         syncBtn.disabled = false;
     }
 }
 
+function closeAccountMenu() {
+    const menu = document.getElementById('accountMenu');
+    if (menu.matches(':popover-open')) menu.hidePopover();
+}
+
 // Open the user's Google Sheet
 async function handleOpenSheet() {
+    closeAccountMenu();
     const { syncState } = await chrome.storage.local.get('syncState');
     if (syncState?.sheetId) {
         chrome.tabs.create({ url: `https://docs.google.com/spreadsheets/d/${syncState.sheetId}/edit` });
@@ -810,6 +1086,7 @@ function updateSyncUI(user, syncState) {
         signInBtn.style.display = 'none';
         userInfo.style.display = 'flex';
         userAvatar.src = user.picture || 'icons/icon48.png';
+        userAvatar.closest('button').title = user.email;
         userEmail.textContent = user.email;
         const hasSheet = syncState?.userId === user.userId && syncState.sheetId;
         openSheetBtn.style.display = hasSheet ? '' : 'none';
@@ -841,34 +1118,39 @@ window.addEventListener('pagehide', () => {
     if (document.activeElement instanceof HTMLInputElement) {
         document.activeElement.blur();
     }
+    flushSettings();
 });
 
-// Show notification
-function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        background: ${type === 'success' ? '#34a853' : type === 'error' ? '#ea4335' : '#4285f4'};
-        color: white;
-        border-radius: 6px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        z-index: 10000;
-        animation: slideIn 0.3s ease-out;
-    `;
+// Show a short message, optionally with one action such as Undo. Only one shows at a time.
+let toastTimer;
+function showNotification(message, type = 'info', action) {
+    document.querySelector('.toast')?.remove();
+    clearTimeout(toastTimer);
 
-    document.body.appendChild(notification);
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', 'status');
+    const text = document.createElement('span');
+    text.textContent = message;
+    toast.append(text);
 
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease-out';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    if (action) {
+        const button = document.createElement('button');
+        button.textContent = action.label;
+        button.addEventListener('click', () => {
+            toast.remove();
+            action.run();
+        });
+        toast.append(button);
+    }
+
+    // Toasts must stay above an open modal dialog
+    (document.getElementById('appDialog').open ? document.getElementById('appDialog') : document.body).append(toast);
+
+    toastTimer = setTimeout(() => {
+        toast.classList.add('leaving');
+        setTimeout(() => toast.remove(), 200);
+    }, action ? 6000 : 3000);
 }
 
 // "+ New category" from the right-click menu opens the popup: ask for the category name,
@@ -890,23 +1172,24 @@ async function showPendingSave() {
 
     const label = document.createElement('div');
     label.className = 'pending-save-title';
-    label.textContent = `Save "${pending.title || pending.url}" to new category:`;
+    label.textContent = t('saveToNewCategory', { title: pending.title || pending.url });
     label.title = pending.url;
 
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.placeholder = 'Category name';
-    nameInput.value = pending.suggestedName;
+    const nameInput = createTextInput('', t('categoryName'), pending.suggestedName);
 
     const saveBtn = document.createElement('button');
     saveBtn.className = 'btn-primary save-link-btn';
-    saveBtn.textContent = 'Save';
+    saveBtn.textContent = t('save');
 
     const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'save-link-btn';
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.className = 'btn-plain';
+    cancelBtn.textContent = t('cancel');
 
-    form.append(label, nameInput, saveBtn, cancelBtn);
+    const actions = document.createElement('div');
+    actions.className = 'form-actions';
+    actions.append(cancelBtn, saveBtn);
+
+    form.append(label, nameInput, actions);
     container.replaceChildren(form);
     nameInput.focus();
     nameInput.select();
@@ -919,7 +1202,7 @@ async function showPendingSave() {
         }
         await saveLinkToNewCategory(name, pending);
         container.replaceChildren();
-        showNotification(`Saved to "${name}"`, 'success');
+        showNotification(t('savedTo', { name }), 'success');
     });
 
     cancelBtn.addEventListener('click', () => container.replaceChildren());
@@ -927,6 +1210,7 @@ async function showPendingSave() {
     nameInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') saveBtn.click();
     });
+    onEscape(nameInput, () => container.replaceChildren());
 }
 
 // Create the category (or reuse one with the same name) with the link at the top
@@ -950,5 +1234,64 @@ async function saveLinkToNewCategory(name, pending) {
 // Initialize
 // Focus search on open (autofocus alone is not always honored in extension popups)
 document.getElementById('searchInput').focus();
-initializeSync();
-loadData().then(showPendingSave);
+
+// Settings panel: show the current values and apply every change live
+function showSettings(settings) {
+    for (const [id, on] of [['themeLight', settings.theme === 'light'], ['themeDark', settings.theme === 'dark'],
+        ['langVi', settings.lang === 'vi'], ['langEn', settings.lang === 'en']]) {
+        document.getElementById(id).setAttribute('aria-pressed', String(on));
+    }
+    document.getElementById('transparencyRange').value = settings.transparency;
+    document.getElementById('transparencyValue').textContent = settings.transparency;
+    document.getElementById('blurRange').value = settings.blur;
+    document.getElementById('blurValue').textContent = `${settings.blur}px`;
+}
+
+async function changeSettings(patch) {
+    const settings = await saveSettings(patch);
+    showSettings(settings);
+    renderLinks(); // Re-render text made by JS in the new language
+}
+
+function initSettingsPanel() {
+    document.getElementById('themeLight').addEventListener('click', () => changeSettings({ theme: 'light' }));
+    document.getElementById('themeDark').addEventListener('click', () => changeSettings({ theme: 'dark' }));
+    document.getElementById('langVi').addEventListener('click', () => changeSettings({ lang: 'vi' }));
+    document.getElementById('langEn').addEventListener('click', () => changeSettings({ lang: 'en' }));
+    document.getElementById('transparencyRange').addEventListener('input', (e) => changeSettings({ transparency: Number(e.target.value) }));
+    document.getElementById('blurRange').addEventListener('input', (e) => changeSettings({ blur: Number(e.target.value) }));
+    // Reset the look; the language is a separate, explicit choice and stays
+    document.getElementById('settingsReset').addEventListener('click', () => changeSettings({ ...DEFAULT_SETTINGS }));
+}
+
+// Settings (language included) must be known before anything is rendered
+async function initSettings() {
+    try {
+        const settings = await loadSettings();
+        applySettings(settings);
+        showSettings(settings);
+    } catch (error) {
+        console.error('Could not read settings:', error);
+        applyI18n(document);
+    }
+    initSettingsPanel();
+}
+
+// The list scrolls under the glass bars: keep its padding equal to their live heights
+function trackBarHeights() {
+    const container = document.querySelector('.container');
+    const observer = new ResizeObserver(() => {
+        container.style.setProperty('--top-h', `${document.querySelector('.bar-top').offsetHeight}px`);
+        container.style.setProperty('--foot-h', `${document.querySelector('.bar-foot').offsetHeight}px`);
+    });
+    observer.observe(document.querySelector('.bar-top'));
+    observer.observe(document.querySelector('.bar-foot'));
+}
+
+trackBarHeights();
+initSettings().then(() => {
+    initializeSync();
+    return loadData();
+}).then(showPendingSave);
+// Entrance animation plays once, not on every re-render
+setTimeout(() => document.body.classList.remove('first-render'), 700);

@@ -26,9 +26,9 @@
             <nav class="nav" aria-label="Điều hướng chính">
                 <a href="./">Trang chủ</a>
                 <a href="privacy.html" aria-current="page">Quyền riêng tư</a>
-                <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub</a>
                 <a class="lang" href="../privacy.html" hreflang="en" lang="en">English</a>
             </nav>
+            <a class="head-btn" href="https://github.com/CDinhh/Extension-Save-Link" aria-label="Kho mã nguồn trên GitHub" title="Kho mã nguồn trên GitHub"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.23 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58A12 12 0 0 0 12 .3"/></svg></a>
             <button class="theme-toggle" type="button" hidden aria-pressed="false" aria-label="Chế độ tối" title="Chế độ tối"><i class="fa-solid fa-moon" aria-hidden="true"></i><i class="fa-solid fa-sun" aria-hidden="true"></i></button>
         </div>
     </header>
@@ -50,6 +50,7 @@
                     <li><a href="#about">Về chính sách này</a></li>
                     <li><a href="#data">Dữ liệu tiện ích xử lý</a></li>
                     <li><a href="#google">Dữ liệu người dùng Google</a></li>
+                    <li><a href="#permissions">Quyền của trình duyệt</a></li>
                     <li><a href="#sharing">Chia sẻ dữ liệu</a></li>
                     <li><a href="#control">Quyền kiểm soát và xóa dữ liệu</a></li>
                     <li><a href="#security">Bảo mật</a></li>
@@ -82,7 +83,7 @@
                                 </tr>
                                 <tr>
                                     <th scope="row">URL và tiêu đề của tab hiện tại</th>
-                                    <td>Chỉ được đọc khi bạn dùng menu chuột phải để lưu trang, và được lưu thành một link. Tiện ích không đọc nội dung trang và không lưu lịch sử duyệt web.</td>
+                                    <td>Chỉ được đọc khi bạn lưu trang bằng menu chuột phải, hoặc bấm + trong popup để thêm link (form tự điền trang hiện tại). Chỉ được lưu nếu bạn bấm lưu. Tiện ích không đọc nội dung trang và không lưu lịch sử duyệt web.</td>
                                     <td>Giống như link.</td>
                                 </tr>
                                 <tr>
@@ -100,6 +101,11 @@
                                     <td>ID của sheet, phiên bản và thời gian sửa đổi, dùng để phát hiện thay đổi.</td>
                                     <td>Trình duyệt của bạn, cho đến khi gỡ tiện ích.</td>
                                 </tr>
+                                <tr>
+                                    <th scope="row">Cài đặt hiển thị</th>
+                                    <td>Giao diện, ngôn ngữ, độ trong suốt và độ mờ của popup.</td>
+                                    <td>Chỉ trong trình duyệt của bạn. Không đồng bộ và không gửi đi đâu.</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -114,7 +120,29 @@
                         <li><code>https://www.googleapis.com/auth/drive.file</code>: để tạo, tìm, đọc và cập nhật bảng tính "Link Inventory Extension [Dont delete]" chứa link của bạn. Quyền này không cho phép truy cập các file khác trong Drive của bạn.</li>
                     </ul>
                     <p>Dữ liệu Google của bạn chỉ được dùng để đăng nhập và đồng bộ. Dữ liệu không bị bán, không dùng cho quảng cáo, không dùng để đánh giá tín dụng và không dùng để huấn luyện mô hình AI. Không ai, kể cả tác giả, đọc dữ liệu này, vì nó không bao giờ được gửi cho tác giả.</p>
-                    <p class="callout">Việc Save Link Extension sử dụng và chuyển cho ứng dụng khác thông tin nhận từ các API của Google sẽ tuân thủ <a href="https://developers.google.com/terms/api-services-user-data-policy">Chính sách dữ liệu người dùng của Google API Services</a>, bao gồm các yêu cầu về Giới hạn sử dụng (Limited Use).</p>
+                    <div class="callout">
+                        <p><strong>Giới hạn sử dụng (Limited Use).</strong> Việc Save Link Extension sử dụng và chuyển cho ứng dụng khác thông tin nhận từ các API của Google sẽ tuân thủ <a href="https://developers.google.com/terms/api-services-user-data-policy">Chính sách dữ liệu người dùng của Google API Services</a>, bao gồm các yêu cầu về Giới hạn sử dụng.</p>
+                        <p>Việc sử dụng thông tin nhận từ các API của Google cũng sẽ tuân thủ <a href="https://developer.chrome.com/docs/webstore/program-policies/policies">Chính sách dữ liệu người dùng của Chrome Web Store</a>, bao gồm các yêu cầu về Giới hạn sử dụng.</p>
+                    </div>
+                </section>
+
+                <section id="permissions">
+                    <h2>Quyền của trình duyệt</h2>
+                    <p>Tiện ích chỉ xin trình duyệt những quyền tối thiểu cần dùng. Tiện ích không truy cập các trang bạn xem, trừ khi bạn thao tác trên trang đó.</p>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr><th scope="col">Quyền</th><th scope="col">Dùng để làm gì</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><th scope="row"><code>storage</code></th><td>Lưu link, nhóm, trạng thái đồng bộ và cài đặt hiển thị trong trình duyệt.</td></tr>
+                                <tr><th scope="row"><code>activeTab</code></th><td>Đọc địa chỉ và tiêu đề của tab đang mở, chỉ khi bạn lưu trang bằng menu chuột phải hoặc bấm + trong popup.</td></tr>
+                                <tr><th scope="row"><code>contextMenus</code></th><td>Thêm mục "Lưu trang vào..." vào menu chuột phải.</td></tr>
+                                <tr><th scope="row"><code>notifications</code></th><td>Báo đã lưu khi bạn lưu trang bằng menu chuột phải.</td></tr>
+                                <tr><th scope="row"><code>identity</code></th><td>Mở cửa sổ đăng nhập Google (tùy chọn) để đồng bộ.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </section>
 
                 <section id="sharing">

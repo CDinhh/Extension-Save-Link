@@ -1,8 +1,10 @@
 node_modules/
 out/
+dist/
 .vscode-test/
 *.vsix
 .DS_Store
 
 # Private key for extension
 key.pem
+.superpowers/

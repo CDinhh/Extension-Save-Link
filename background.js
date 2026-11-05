@@ -1,5 +1,5 @@
 // Auth + sync run here (not in the popup) so they survive the popup closing
-importScripts('google-auth.js', 'sheets-sync.js', 'category-colors.js');
+importScripts('i18n.js', 'google-auth.js', 'sheets-sync.js', 'category-colors.js');
 
 // Storage key
 const STORAGE_KEY = 'savedLinksData';
@@ -16,7 +16,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace !== 'local') return;
 
-    if (changes[STORAGE_KEY]) {
+    if (changes[STORAGE_KEY] || changes.uiSettings) {
         scheduleContextMenuUpdate();
     }
 
@@ -37,9 +37,24 @@ function scheduleContextMenuUpdate() {
 }
 
 // Function to update context menu with current categories
+// The service worker has no popup localStorage: the language comes from uiSettings
+async function loadLanguage() {
+    const { uiSettings } = await chrome.storage.local.get('uiSettings');
+    setLang(uiSettings?.lang);
+}
+
+// Titles of the current menu, read by the end-to-end tests (Chrome has no getter for menu items)
+globalThis.__menuTitles = [];
+function createMenuItem(item) {
+    chrome.contextMenus.create(item);
+    if (item.title) globalThis.__menuTitles.push(item.title);
+}
+
 async function updateContextMenu() {
+    await loadLanguage();
     // Remove all existing context menus
     await chrome.contextMenus.removeAll();
+    globalThis.__menuTitles = [];
 
     // Get current data
     const result = await chrome.storage.local.get([STORAGE_KEY, ORDER_KEY]);
@@ -52,22 +67,22 @@ async function updateContextMenu() {
 
     if (categories.length === 0) {
         // No categories, create single option to save to new category
-        chrome.contextMenus.create({
+        createMenuItem({
             id: 'saveLinkToNew',
-            title: 'Save page to new category',
+            title: t('menuSaveToNew'),
             contexts: ['page']
         });
     } else {
         // Create parent menu
-        chrome.contextMenus.create({
+        createMenuItem({
             id: 'saveLinkParent',
-            title: 'Save page to...',
+            title: t('menuSaveTo'),
             contexts: ['page']
         });
 
         // Create submenu for each category
         categories.forEach((category) => {
-            chrome.contextMenus.create({
+            createMenuItem({
                 id: `saveToCategory_${category}`,
                 parentId: 'saveLinkParent',
                 title: category,
@@ -76,7 +91,7 @@ async function updateContextMenu() {
         });
 
         // Add separator
-        chrome.contextMenus.create({
+        createMenuItem({
             id: 'separator',
             parentId: 'saveLinkParent',
             type: 'separator',
@@ -84,10 +99,10 @@ async function updateContextMenu() {
         });
 
         // Add option to create new category
-        chrome.contextMenus.create({
+        createMenuItem({
             id: 'saveLinkToNew',
             parentId: 'saveLinkParent',
-            title: '+ New category',
+            title: t('menuNewCategory'),
             contexts: ['page']
         });
     }
@@ -122,9 +137,10 @@ function suggestCategoryName(url, title) {
 
 // Handle context menu click
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-    const url = tab.url;
-    const title = tab.title;
+    const url = info.pageUrl || tab.url;
+    const title = tab.title || '';
 
+    await loadLanguage();
     // Get existing data
     const result = await chrome.storage.local.get([STORAGE_KEY, ORDER_KEY]);
     const linksData = result[STORAGE_KEY] || {};
@@ -167,8 +183,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         chrome.notifications.create({
             type: 'basic',
             iconUrl: 'icons/icon48.png',
-            title: 'Link saved',
-            message: isNewCategory ? `Saved to new category "${categoryName}"` : `Saved to "${categoryName}"`
+            title: t('linkSaved'),
+            message: t(isNewCategory ? 'savedToNew' : 'savedTo', { name: categoryName })
         });
     } else if (info.menuItemId.startsWith('saveToCategory_')) {
         // Extract category name
@@ -191,8 +207,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             chrome.notifications.create({
                 type: 'basic',
                 iconUrl: 'icons/icon48.png',
-                title: 'Link saved',
-                message: `Saved to "${categoryName}"`
+                title: t('linkSaved'),
+                message: t('savedTo', { name: categoryName })
             })
         }
     }
@@ -279,9 +295,8 @@ async function syncLocalData(interactive) {
     if (!sheet) {
         if (!needsMerge && !interactive) {
             // The user deleted the sheet: don't silently bring it back
-            throw new SheetDeletedError(
-                'Your sync sheet was deleted from Google Drive. Click sync to create a new one, or sign out to stop syncing.'
-            );
+            await loadLanguage();
+            throw new SheetDeletedError(t('sheetDeleted'));
         }
         // First sync for this account, a fresh sign-in, or the user asked for a new sheet:
         // start it from local data

@@ -1,58 +1,123 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Save Link</title>
+    <script src="settings-boot.js"></script>
     <link rel="stylesheet" href="popup.css">
-    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
     <script src="Sortable.min.js"></script>
 </head>
 
-<body>
+<body class="first-render">
     <div class="container">
-        <div class="header">
-            <h1>Link Inventory</h1>
-            <div class="sync-status" id="syncStatus">
-                <button id="signInBtn" class="btn-sign-in" title="Sign in with Google to sync across devices">
-                    <i class="fa-brands fa-google"></i> Sign In
-                </button>
-                <div id="userInfo" class="user-info" style="display: none;">
-                    <img id="userAvatar" class="user-avatar" src="" alt="User">
-                    <span id="userEmail" class="user-email"></span>
-                    <button id="openSheetBtn" class="btn-sync" title="Open your Google Sheet" style="display: none;">
-                        <i class="fa-solid fa-table"></i>
+        <main id="linksList" class="links-list"></main>
+
+        <header class="bar-top">
+            <div class="bar-line">
+                <div class="brand">
+                    <img src="icons/icon48.png" alt="" width="24" height="24">
+                    <h1>Save Link</h1>
+                </div>
+                <div class="header-actions" id="syncStatus">
+                    <button id="signInBtn" class="btn-sign-in" data-i18n-title="signInTitle">
+                        <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#google-logo"></use></svg>
+                        <span data-i18n="signIn">Sign in</span>
                     </button>
-                    <button id="syncNowBtn" class="btn-sync" title="Sync now">
-                        <i class="fa-solid fa-sync"></i>
+                    <div id="userInfo" class="user-info" style="display: none;">
+                        <button id="syncNowBtn" class="btn-icon" data-i18n-title="syncNow" data-i18n-aria="syncNow">
+                            <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#arrows-clockwise"></use></svg>
+                        </button>
+                        <button class="avatar-btn" popovertarget="accountMenu" data-i18n-title="account" data-i18n-aria="account">
+                            <img id="userAvatar" class="user-avatar" src="icons/icon48.png" alt="">
+                        </button>
+                        <div id="accountMenu" class="account-menu glass-panel" popover>
+                            <div id="userEmail" class="user-email"></div>
+                            <button id="openSheetBtn" class="menu-item" style="display: none;">
+                                <svg class="icon sheet-icon" aria-hidden="true"><use href="icons/phosphor-light.svg#table"></use></svg>
+                                <span data-i18n="openSheet">Open Google Sheet</span>
+                            </button>
+                            <button id="signOutBtn" class="menu-item">
+                                <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#sign-out"></use></svg>
+                                <span data-i18n="signOut">Sign out</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="settingsBtn" class="btn-icon" popovertarget="settingsPanel" data-i18n-title="settings" data-i18n-aria="settings">
+                        <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#gear-six"></use></svg>
                     </button>
-                    <button id="signOutBtn" class="btn-sign-out" title="Sign out">
-                        <i class="fa-solid fa-sign-out-alt"></i>
-                    </button>
+                    <div id="settingsPanel" class="settings-panel glass-panel" popover>
+                        <h2 data-i18n="settings">Settings</h2>
+                        <div class="setting-row">
+                            <span data-i18n="theme">Theme</span>
+                            <div class="segmented">
+                                <button id="themeLight" type="button">
+                                    <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#sun"></use></svg>
+                                    <span data-i18n="light">Light</span>
+                                </button>
+                                <button id="themeDark" type="button">
+                                    <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#moon"></use></svg>
+                                    <span data-i18n="dark">Dark</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <span data-i18n="language">Language</span>
+                            <div class="segmented">
+                                <button id="langVi" type="button" lang="vi">Tiếng Việt</button>
+                                <button id="langEn" type="button" lang="en">English</button>
+                            </div>
+                        </div>
+                        <label class="setting-range">
+                            <span data-i18n="transparency">Transparency</span>
+                            <output id="transparencyValue"></output>
+                            <input type="range" id="transparencyRange" min="0" max="100" step="1">
+                        </label>
+                        <label class="setting-range">
+                            <span data-i18n="glassBlur">Glass blur</span>
+                            <output id="blurValue"></output>
+                            <input type="range" id="blurRange" min="0" max="24" step="1">
+                        </label>
+                        <button id="settingsReset" type="button" class="btn-plain" data-i18n="reset">Reset</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Search by titles, links, descriptions" autofocus>
-            <button id="addCategoryBtn" class="btn-add-category">+ Add Category</button>
-        </div>
-
-        <div id="pendingSave"></div>
-
-        <div id="linksList" class="links-list"></div>
-
-        <div class="footer">
-            <span>Link Manager Extension By CD</span>
-            <div class="footer-actions">
-                <button id="exportBtn" class="btn-footer" title="Export All Data (JSON file)">Export Data</button>
-                <button id="importBtn" class="btn-footer" title="Import Data (JSON file)">Import Data</button>
-                <input type="file" id="importFile" accept=".json" style="display: none;">
+            <div class="search-box">
+                <div class="search-field">
+                    <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#magnifying-glass"></use></svg>
+                    <input type="search" id="searchInput" data-i18n-placeholder="searchPlaceholder" data-i18n-aria="searchPlaceholder" placeholder="Search links" autofocus>
+                </div>
+                <button id="addCategoryBtn" class="btn-new">
+                    <span data-i18n="newCategory">New category</span>
+                    <span class="plus-ring"><svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#plus"></use></svg></span>
+                </button>
             </div>
-        </div>
+
+            <div id="pendingSave"></div>
+        </header>
+
+        <footer class="bar-foot">
+            <span><span data-i18n="footerBy">Save Link Extension by</span> <a href="https://github.com/CDinhh/Extension-Save-Link" target="_blank" rel="noopener">cdinh</a></span>
+            <div class="footer-actions">
+                <button id="exportBtn" class="btn-footer" data-i18n-title="exportTitle">
+                    <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#export"></use></svg>
+                    <span data-i18n="export">Export</span>
+                </button>
+                <button id="importBtn" class="btn-footer" data-i18n-title="importTitle">
+                    <svg class="icon" aria-hidden="true"><use href="icons/phosphor-light.svg#download-simple"></use></svg>
+                    <span data-i18n="import">Import</span>
+                </button>
+                <input type="file" id="importFile" accept=".json" hidden>
+            </div>
+        </footer>
     </div>
 
+    <dialog id="appDialog" class="app-dialog glass-panel"></dialog>
+
+    <script src="i18n.js"></script>
+    <script src="settings.js"></script>
     <script src="category-colors.js"></script>
     <script src="popup.js"></script>
 </body>

@@ -33,7 +33,7 @@ class SheetsSync {
             // Token revoked or expired early: refresh it silently and retry once
             await this.auth.clearAccessToken();
             if (!isRetry) return this.request(url, options, true);
-            throw new AuthRequiredError('Google session expired. Click sync to sign in again.');
+            throw new AuthRequiredError(t('sessionExpired'));
         }
         if (!response.ok) {
             const text = await response.text();

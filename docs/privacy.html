@@ -26,9 +26,9 @@
             <nav class="nav" aria-label="Main">
                 <a href="./">Home</a>
                 <a href="privacy.html" aria-current="page">Privacy</a>
-                <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub</a>
                 <a class="lang" href="vi/privacy.html" hreflang="vi" lang="vi">Tiếng Việt</a>
             </nav>
+            <a class="head-btn" href="https://github.com/CDinhh/Extension-Save-Link" aria-label="GitHub repository" title="GitHub repository"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.23 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58A12 12 0 0 0 12 .3"/></svg></a>
             <button class="theme-toggle" type="button" hidden aria-pressed="false" aria-label="Dark mode" title="Dark mode"><i class="fa-solid fa-moon" aria-hidden="true"></i><i class="fa-solid fa-sun" aria-hidden="true"></i></button>
         </div>
     </header>
@@ -50,6 +50,7 @@
                     <li><a href="#about">About this policy</a></li>
                     <li><a href="#data">Data the extension handles</a></li>
                     <li><a href="#google">Google user data</a></li>
+                    <li><a href="#permissions">Browser permissions</a></li>
                     <li><a href="#sharing">Sharing</a></li>
                     <li><a href="#control">Your control and deletion</a></li>
                     <li><a href="#security">Security</a></li>
@@ -77,12 +78,12 @@
                             <tbody>
                                 <tr>
                                     <th scope="row">Links and categories</th>
-                                    <td>The core feature. Includes URLs, descriptions, category names, descriptions and colours, done status and date added.</td>
+                                    <td>The core feature. Includes URLs, descriptions, category names, descriptions and colors, done status and date added.</td>
                                     <td>Your browser. If you sign in, also a Google Sheet in your Drive.</td>
                                 </tr>
                                 <tr>
                                     <th scope="row">Current tab URL and title</th>
-                                    <td>Read only when you use the right-click menu to save a page, and stored as a saved link. The extension does not read page contents or keep a browsing history.</td>
+                                    <td>Read only when you save a page from the right-click menu, or click + in the popup to add a link, which fills in the current page. Stored only if you save it. The extension does not read page contents or keep a browsing history.</td>
                                     <td>Same as links.</td>
                                 </tr>
                                 <tr>
@@ -92,13 +93,18 @@
                                 </tr>
                                 <tr>
                                     <th scope="row">Google access token</th>
-                                    <td>Authorises requests to Google. It expires after about an hour.</td>
+                                    <td>Authorizes requests to Google. It expires after about an hour.</td>
                                     <td>Browser session storage, cleared when you sign out or close the browser.</td>
                                 </tr>
                                 <tr>
                                     <th scope="row">Sync status</th>
                                     <td>The sheet ID, its version and modification times, used to detect changes.</td>
                                     <td>Your browser, until you remove the extension.</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Display settings</th>
+                                    <td>Theme, language, transparency and blur of the popup.</td>
+                                    <td>Your browser only. Never synced or sent anywhere.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -114,7 +120,29 @@
                         <li><code>https://www.googleapis.com/auth/drive.file</code>: to create, find, read and update the spreadsheet named "Link Inventory Extension [Dont delete]", which stores your links. This permission does not give access to your other Drive files.</li>
                     </ul>
                     <p>Your Google data is used only to provide sign-in and sync. It is not sold, not used for advertising, not used to determine creditworthiness and not used to train AI models. No person, including the developer, reads it, because it is never sent to the developer.</p>
-                    <p class="callout">Save Link Extension's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+                    <div class="callout">
+                        <p><strong>Limited Use.</strong> Save Link Extension's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+                        <p>The use of information received from Google APIs will also adhere to the <a href="https://developer.chrome.com/docs/webstore/program-policies/policies">Chrome Web Store User Data Policy</a>, including the Limited Use requirements.</p>
+                    </div>
+                </section>
+
+                <section id="permissions">
+                    <h2>Browser permissions</h2>
+                    <p>The extension asks the browser for the smallest set of permissions it needs. It has no access to the pages you visit unless you act on one.</p>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr><th scope="col">Permission</th><th scope="col">What it is used for</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><th scope="row"><code>storage</code></th><td>Keeps your links, categories, sync status and display settings in your browser.</td></tr>
+                                <tr><th scope="row"><code>activeTab</code></th><td>Reads the address and title of the current tab, only when you save it from the right-click menu or click + in the popup.</td></tr>
+                                <tr><th scope="row"><code>contextMenus</code></th><td>Adds "Save page to..." to the right-click menu.</td></tr>
+                                <tr><th scope="row"><code>notifications</code></th><td>Confirms that a page was saved from the right-click menu.</td></tr>
+                                <tr><th scope="row"><code>identity</code></th><td>Opens the optional Google sign-in window used for sync.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </section>
 
                 <section id="sharing">

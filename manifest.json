@@ -1,18 +1,16 @@
 {
     "manifest_version": 3,
     "name": "Save Link Extension",
-    "version": "2.0.0",
-    "description": "Lưu và quản lý links với tên và mô tả",
+    "version": "2.0.1",
+    "description": "Save links into color-coded categories, search them, and sync across browsers with a Google Sheet in your own Drive.",
+    "homepage_url": "https://cdinhh.github.io/Extension-Save-Link/",
+    "minimum_chrome_version": "114",
     "permissions": [
         "storage",
-        "tabs",
+        "activeTab",
         "contextMenus",
         "notifications",
         "identity"
-    ],
-    "host_permissions": [
-        "https://www.googleapis.com/*",
-        "https://sheets.googleapis.com/*"
     ],
     "background": {
         "service_worker": "background.js"

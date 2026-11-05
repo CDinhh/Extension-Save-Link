@@ -62,7 +62,7 @@ class GoogleAuth {
         // Google's consent screen lets the user untick the Drive permission
         const grantedScopes = (params.get('scope') || '').split(' ');
         if (!grantedScopes.includes(DRIVE_FILE_SCOPE)) {
-            throw new Error('Please allow access to Google Drive files so links can be saved to your Google Sheet');
+            throw new Error(t('allowDrive'));
         }
 
         const user = {
@@ -119,7 +119,7 @@ class GoogleAuth {
         } catch (error) {
             if (!interactive) {
                 console.warn('Silent token refresh failed:', error);
-                throw new AuthRequiredError('Google session expired. Click sync to sign in again.');
+                throw new AuthRequiredError(t('sessionExpired'));
             }
             await this.authorize(true);
         }
