@@ -56,6 +56,10 @@ Trong Google Cloud project chứa OAuth Client ID:
 2. **OAuth consent screen → Data access**: thêm scope `.../auth/drive.file`
 3. **Credentials**: OAuth client (Web application) có Authorized redirect URI
    `https://<extension-id>.chromiumapp.org/oauth-redirect.html`
+4. **Branding**: Home page và Privacy policy trỏ tới trang trong `docs/` (GitHub Pages), thêm `cdinhh.github.io` vào Authorized domains
+5. **Audience**: bấm **Publish app** để chuyển sang In production
+
+Trang chủ: https://cdinhh.github.io/Extension-Save-Link/ · [Chính sách quyền riêng tư](https://cdinhh.github.io/Extension-Save-Link/vi/privacy.html)
 
 ## Cài đặt
 
@@ -142,6 +146,7 @@ Extension-Save-Link/
 ├── category-colors.js # Chọn màu ngẫu nhiên chưa dùng cho category mới
 ├── Sortable.min.js    # Kéo thả
 ├── vendor/fontawesome/ # Icons (đóng gói sẵn, chạy offline)
+├── docs/              # Trang chủ và chính sách quyền riêng tư (GitHub Pages)
 ├── icons/             # Icons cho extension
 │   ├── icon16.png
 │   ├── icon48.png

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Save Link Extension: keep every link in one tidy place</title>
+    <meta name="description" content="A free, open source browser extension that organises your links into categories and syncs them through a Google Sheet in your own Google Drive.">
+    <link rel="canonical" href="https://cdinhh.github.io/Extension-Save-Link/">
+    <link rel="alternate" hreflang="en" href="https://cdinhh.github.io/Extension-Save-Link/">
+    <link rel="alternate" hreflang="vi" href="https://cdinhh.github.io/Extension-Save-Link/vi/">
+    <meta property="og:title" content="Save Link Extension">
+    <meta property="og:description" content="Organise your links into categories and sync them through a Google Sheet in your own Drive.">
+    <meta property="og:image" content="https://cdinhh.github.io/Extension-Save-Link/logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site-head">
+        <div class="wrap">
+            <a class="mark" href="./"><img src="logo.png" alt="" width="32" height="32"><span>Save Link</span></a>
+            <nav class="nav" aria-label="Main">
+                <a href="#features">Features</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="https://github.com/CDinhh/Extension-Save-Link">GitHub</a>
+                <a class="lang" href="vi/" hreflang="vi" lang="vi">Tiếng Việt</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">
+        <section class="hero">
+            <div class="wrap">
+                <div>
+                    <p class="eyebrow">Free, open source browser extension</p>
+                    <h1>Every link worth keeping, <em>in one tidy place.</em></h1>
+                    <p class="lede">Save Link Extension organises the pages you want to come back to into colourful categories, and keeps them in sync across browsers through a Google Sheet in your own Google Drive.</p>
+                    <div class="cta">
+                        <a class="btn btn-primary" href="https://github.com/CDinhh/Extension-Save-Link/archive/refs/tags/v2.0.0.zip">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 20h14"/></svg>
+                            Download v2.0.0
+                        </a>
+                        <a class="btn btn-ghost" href="#permissions">What it can access</a>
+                    </div>
+                    <p class="fine">Works in Chrome, Edge, Brave and other Chromium browsers. Google sign-in is optional.</p>
+                </div>
+
+                <div class="mock" role="img" aria-label="Illustration of the extension popup: three coloured categories of links, one newly added and one ticked as done, with a Synced status.">
+                    <div class="mock-head">
+                        Link Inventory
+                        <span class="sync-pill">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4L4 9m0-5v5h5M4 13a8 8 0 0 0 14.3 4l1.7-2m0 5v-5h-5"/></svg>
+                            Synced
+                        </span>
+                    </div>
+                    <div class="mock-search">Search by titles, links, descriptions</div>
+                    <div class="cat" style="--c: var(--orange)">
+                        <div class="cat-name">Learning <span>3 links</span></div>
+                        <div class="row new"><i class="box"></i><b>MDN: Web Components guide</b></div>
+                        <div class="row"><i class="box on"></i><b>Designing data-intensive apps</b></div>
+                    </div>
+                    <div class="cat" style="--c: var(--sky)">
+                        <div class="cat-name">Work tools <span>2 links</span></div>
+                        <div class="row"><i class="box"></i><b>Team dashboard</b></div>
+                    </div>
+                    <div class="cat" style="--c: var(--green)">
+                        <div class="cat-name">Read later <span>5 links</span></div>
+                        <div class="row"><i class="box"></i><b>A long article for the weekend</b></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section alt" id="features">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>Small tool, everything you reach for.</h2>
+                    <p>No account is needed to start. Your links work offline, right in the browser.</p>
+                </div>
+                <div class="bento">
+                    <article class="tile wide in">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4L4 9m0-5v5h5M4 13a8 8 0 0 0 14.3 4l1.7-2m0 5v-5h-5"/></svg></div>
+                        <h3>The same links on every browser</h3>
+                        <p>Sign in with Google on your laptop, your work PC and any other Chromium browser. Changes sync automatically, and existing links are merged when you sign in.</p>
+                    </article>
+                    <article class="tile in" style="--c: var(--orange)">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div>
+                        <h3>Colourful categories</h3>
+                        <p>Group links by topic, pick a colour for each group and drag to reorder them.</p>
+                    </article>
+                    <article class="tile in" style="--c: var(--yellow)">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 4 14 7.5-6 1.8-2.2 6.2z"/></svg></div>
+                        <h3>Right-click to save</h3>
+                        <p>Save the page you are on straight into a category from the context menu.</p>
+                    </article>
+                    <article class="tile in" style="--c: var(--sky)">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg></div>
+                        <h3>Instant search</h3>
+                        <p>Find any link by its address or description as you type.</p>
+                    </article>
+                    <article class="tile in" style="--c: var(--green)">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+                        <h3>Done checkboxes</h3>
+                        <p>Tick off what you have read, watched or finished.</p>
+                    </article>
+                    <article class="tile in" style="--c: var(--yellow)">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></div>
+                        <h3>Edit in place</h3>
+                        <p>Change a link or category right in the list, with no extra forms.</p>
+                    </article>
+                    <article class="tile in" style="--c: var(--sky)">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4V6a2 2 0 0 1 2-2h9v1"/></svg></div>
+                        <h3>One click to open or copy</h3>
+                        <p>Open a link in a new tab or copy its address straight away.</p>
+                    </article>
+                    <article class="tile in" style="--c: var(--orange)">
+                        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M5 20h14"/></svg></div>
+                        <h3>Export and import</h3>
+                        <p>Back up everything to a JSON file and restore it whenever you like.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="sync">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>Your data lives in your Drive, not on our server.</h2>
+                    <p>There is no server of ours in the middle. The extension talks directly to Google, so the only copy in the cloud is a sheet in your own account.</p>
+                </div>
+                <div class="flow in">
+                    <div class="node">
+                        <strong>Browser at home</strong>
+                        <small>Save Link Extension</small>
+                    </div>
+                    <div class="pipe" aria-hidden="true"></div>
+                    <div class="node home">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#1f9d55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M12 9v12"/></svg>
+                        <strong>Your Google Sheet</strong>
+                        <small>In your Drive. Open it, edit it or delete it at any time.</small>
+                    </div>
+                    <div class="pipe rev" aria-hidden="true"></div>
+                    <div class="node">
+                        <strong>Browser at work</strong>
+                        <small>Save Link Extension</small>
+                    </div>
+                </div>
+                <p class="no-server in"><b>Developer access: none.</b> No analytics, no ads, and no copy of your links on any other server.</p>
+            </div>
+        </section>
+
+        <section class="section alt" id="permissions">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>What Google will ask you to allow, and why.</h2>
+                    <p>These permissions are requested only if you choose to sign in. Without signing in, the extension keeps your links in your browser.</p>
+                </div>
+                <div class="perm">
+                    <article class="in">
+                        <code>openid email profile</code>
+                        <h3>Your name, email and profile photo</h3>
+                        <p>Shown in the popup so you can see which account is syncing, and used to make sure sync stays on that account.</p>
+                    </article>
+                    <article class="in">
+                        <code>drive.file</code>
+                        <h3>Only the file the extension creates</h3>
+                        <p>Lets the extension create and update its sheet, “Link Inventory Extension [Dont delete]”. It cannot see or change your other Drive files.</p>
+                    </article>
+                </div>
+                <p class="no-server in" style="text-align:left">Full details are in the <a href="privacy.html">privacy policy</a>.</p>
+            </div>
+        </section>
+
+        <section class="section" id="install">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>Install in under a minute.</h2>
+                </div>
+                <ol class="steps in">
+                    <li><b>Download</b>Download the ZIP and unzip it.</li>
+                    <li><b>Open extensions</b>Go to <code>chrome://extensions</code> and turn on Developer mode.</li>
+                    <li><b>Load it</b>Click “Load unpacked” and choose the unzipped folder.</li>
+                    <li><b>Sign in (optional)</b>Click “Sign In” in the popup to start syncing.</li>
+                </ol>
+                <div class="steps-cta">
+                    <a class="btn btn-primary" href="https://github.com/CDinhh/Extension-Save-Link/archive/refs/tags/v2.0.0.zip">Download v2.0.0</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-foot">
+        <div class="wrap">
+            <span>Save Link Extension, made by <a href="https://github.com/CDinhh">CDinhh</a></span>
+            <nav aria-label="Footer">
+                <a href="privacy.html">Privacy policy</a>
+                <a href="https://github.com/CDinhh/Extension-Save-Link">Source code</a>
+                <a href="https://github.com/CDinhh/Extension-Save-Link/issues">Contact</a>
+            </nav>
+        </div>
+    </footer>
+</body>
+
+</html>
