@@ -11,9 +11,9 @@
 [Quyền riêng tư](https://cdinhh.github.io/Extension-Save-Link/vi/privacy.html) ·
 [Báo lỗi](https://github.com/CDinhh/Extension-Save-Link/issues)
 
-<img src="store/screenshot-1.jpg" width="720" alt="Popup của Save Link">
-
 </div>
+
+https://github.com/user-attachments/assets/04b3a91b-98dc-437f-9ab8-8dd075f485fd
 
 ## Tính năng
 
