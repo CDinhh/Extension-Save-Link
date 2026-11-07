@@ -7,6 +7,7 @@
 **Lưu link theo nhóm, tìm lại khi cần.**
 Tiện ích trình duyệt miễn phí, mã nguồn mở, đồng bộ qua Google Sheet trong Drive của chính bạn.
 
+[Chrome Web Store](https://chromewebstore.google.com/detail/aadamanlgmnfnihadggllbllfiggllob) ·
 [Trang chủ](https://cdinhh.github.io/Extension-Save-Link/) ·
 [Chính sách quyền riêng tư](https://cdinhh.github.io/Extension-Save-Link/vi/privacy.html) ·
 [Báo lỗi](https://github.com/CDinhh/Extension-Save-Link/issues)
@@ -28,7 +29,7 @@ Tiện ích trình duyệt miễn phí, mã nguồn mở, đồng bộ qua Googl
 
 ## Cài đặt
 
-**Chrome Web Store:** đang chờ duyệt.
+**Chrome Web Store:** [cài đặt Save Link](https://chromewebstore.google.com/detail/aadamanlgmnfnihadggllbllfiggllob) (Chrome, Edge, Brave, Cốc Cốc).
 
 **Từ mã nguồn** (Chrome, Edge, Brave, Cốc Cốc, phiên bản 114 trở lên):
 
