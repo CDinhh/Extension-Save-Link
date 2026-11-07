@@ -13,7 +13,7 @@
 
 </div>
 
-https://github.com/user-attachments/assets/04b3a91b-98dc-437f-9ab8-8dd075f485fd
+https://github.com/user-attachments/assets/76c4f176-c3fa-449b-9675-ead2c9e49703
 
 ## Tính năng
 
