@@ -18,6 +18,7 @@
 .fa-house::before { content: '\f015'; }
 .fa-briefcase::before { content: '\f0b1'; }
 .fa-download::before { content: '\f019'; }
+.fa-puzzle-piece::before { content: '\f12e'; }
 .fa-moon::before { content: '\f186'; }
 .fa-sun::before { content: '\f185'; }
 .fa-user::before { content: '\f007'; }
